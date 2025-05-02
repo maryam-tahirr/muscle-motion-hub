@@ -3,7 +3,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
-import { Dumbbell, ChevronRight, Calculator, User, Heart, BicepsFlexed } from "lucide-react";
+import WorkoutBuilder from "@/components/WorkoutBuilder";
+import { Dumbbell, ChevronRight, Calculator, User, Heart, BicepsFlexed, BookOpen } from "lucide-react";
 
 const Index = () => {
   return (
@@ -51,7 +52,7 @@ const Index = () => {
         <section className="py-16 px-4 bg-card">
           <div className="container mx-auto max-w-6xl">
             <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="p-6 bg-secondary/20 rounded-lg border border-border">
                 <BicepsFlexed className="h-12 w-12 text-primary mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Interactive Body Map</h3>
@@ -77,15 +78,54 @@ const Index = () => {
               </div>
               
               <div className="p-6 bg-secondary/20 rounded-lg border border-border">
+                <BookOpen className="h-12 w-12 text-primary mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Exercise Library</h3>
+                <p className="text-muted-foreground mb-4">
+                  Browse our comprehensive database of exercises with detailed instructions and animations.
+                </p>
+                <Link to="/exercise-library" className="text-primary flex items-center group">
+                  Browse library
+                  <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </div>
+              
+              <div className="p-6 bg-secondary/20 rounded-lg border border-border">
                 <Heart className="h-12 w-12 text-primary mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Save Favorites</h3>
                 <p className="text-muted-foreground mb-4">
                   Create an account to save your favorite exercises and track your progress over time.
                 </p>
-                <Link to="#" className="text-primary flex items-center group">
+                <Link to="/signup" className="text-primary flex items-center group">
                   Sign up now 
                   <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
                 </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Workout Builder */}
+        <section className="py-16 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold">Create Custom Workouts</h2>
+                <p className="text-lg text-muted-foreground">
+                  Build personalized workout routines that fit your fitness goals and schedule. Add exercises, set your reps, and track your progress all in one place.
+                </p>
+                <div className="hidden md:block">
+                  <Button asChild>
+                    <Link to="/signup">Get Started</Link>
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <WorkoutBuilder />
+              </div>
+              <div className="md:hidden">
+                <Button asChild className="w-full">
+                  <Link to="/signup">Get Started</Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -99,9 +139,10 @@ const Index = () => {
                 <Dumbbell className="h-5 w-5 text-primary" />
                 <span className="font-semibold text-lg">MuscleMotionHub</span>
               </div>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-6">
                 <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Home</Link>
                 <Link to="/exercises" className="text-sm text-muted-foreground hover:text-foreground">Exercises</Link>
+                <Link to="/exercise-library" className="text-sm text-muted-foreground hover:text-foreground">Library</Link>
                 <Link to="/calculators" className="text-sm text-muted-foreground hover:text-foreground">Calculators</Link>
                 <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">About</Link>
               </div>
