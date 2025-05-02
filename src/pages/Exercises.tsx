@@ -8,7 +8,7 @@ const Exercises = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 pt-16 pb-8">
+      <main className="flex-1 pt-20 pb-8">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="py-8">
             <h1 className="text-3xl font-bold mb-2">Exercise Library</h1>

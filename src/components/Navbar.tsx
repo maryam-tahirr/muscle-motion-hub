@@ -33,8 +33,10 @@ const Navbar = () => {
         
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon">
-            <Heart className="h-5 w-5" />
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/saved-exercises">
+              <Heart className="h-5 w-5" />
+            </Link>
           </Button>
           <Button variant="secondary" asChild>
             <Link to="/signin">

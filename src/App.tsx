@@ -13,6 +13,8 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import { ThemeProvider } from "./components/ThemeProvider";
 import ExerciseLibrary from "./pages/ExerciseLibrary";
+import SavedExercises from "./pages/SavedExercises";
+import "./styles/muscleMap.css";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,7 @@ const App = () => (
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/exercise-library" element={<ExerciseLibrary />} />
+            <Route path="/saved-exercises" element={<SavedExercises />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

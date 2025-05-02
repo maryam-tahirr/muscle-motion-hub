@@ -43,9 +43,53 @@ const MuscleViewer = () => {
     <div className="container mx-auto py-4">
       <Card className="bg-card/50 backdrop-blur supports-backdrop-blur:bg-card/30 border-border">
         <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Interactive Muscle Map</h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-animations" className="cursor-pointer mr-2">Show animations</Label>
+                <Switch 
+                  id="show-animations" 
+                  checked={showAnimations}
+                  onCheckedChange={setShowAnimations}
+                />
+              </div>
+              
+              <div>
+                <Label className="mb-1.5 block">Filter by difficulty</Label>
+                <ToggleGroup 
+                  type="single" 
+                  value={difficulty}
+                  onValueChange={(value) => value && setDifficulty(value as DifficultyLevel)}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="all">All</ToggleGroupItem>
+                  <ToggleGroupItem value="beginner">Beginner</ToggleGroupItem>
+                  <ToggleGroupItem value="intermediate">Intermediate</ToggleGroupItem>
+                  <ToggleGroupItem value="advanced">Advanced</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              
+              <div>
+                <Label className="mb-1.5 block">Filter by equipment</Label>
+                <ToggleGroup 
+                  type="single"
+                  value={equipment}
+                  onValueChange={(value) => value && setEquipment(value as EquipmentType)}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="all">All</ToggleGroupItem>
+                  <ToggleGroupItem value="bodyweight">Bodyweight</ToggleGroupItem>
+                  <ToggleGroupItem value="dumbbell">Dumbbell</ToggleGroupItem>
+                  <ToggleGroupItem value="barbell">Barbell</ToggleGroupItem>
+                  <ToggleGroupItem value="machine">Machine</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            </div>
+          </div>
+
           <Tabs defaultValue="male" className="w-full" onValueChange={(value) => setGender(value as 'male' | 'female')}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Interactive Muscle Map</h2>
+            <div className="flex justify-center mb-6">
               <TabsList>
                 <TabsTrigger value="male">Male</TabsTrigger>
                 <TabsTrigger value="female">Female</TabsTrigger>
@@ -63,50 +107,8 @@ const MuscleViewer = () => {
                   </TabsContent>
                 </div>
                 
-                <div className="bg-muted/30 p-4 rounded-lg border border-border">
-                  <h3 className="font-medium mb-3">Muscle Map Options</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="show-animations" className="cursor-pointer">Show animations</Label>
-                      <Switch 
-                        id="show-animations" 
-                        checked={showAnimations}
-                        onCheckedChange={setShowAnimations}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-1.5 block">Filter by difficulty</Label>
-                      <ToggleGroup 
-                        type="single" 
-                        value={difficulty}
-                        onValueChange={(value) => value && setDifficulty(value as DifficultyLevel)}
-                        className="justify-start"
-                      >
-                        <ToggleGroupItem value="all">All</ToggleGroupItem>
-                        <ToggleGroupItem value="beginner">Beginner</ToggleGroupItem>
-                        <ToggleGroupItem value="intermediate">Intermediate</ToggleGroupItem>
-                        <ToggleGroupItem value="advanced">Advanced</ToggleGroupItem>
-                      </ToggleGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-1.5 block">Filter by equipment</Label>
-                      <ToggleGroup 
-                        type="single"
-                        value={equipment}
-                        onValueChange={(value) => value && setEquipment(value as EquipmentType)}
-                        className="justify-start"
-                      >
-                        <ToggleGroupItem value="all">All</ToggleGroupItem>
-                        <ToggleGroupItem value="bodyweight">Bodyweight</ToggleGroupItem>
-                        <ToggleGroupItem value="dumbbell">Dumbbell</ToggleGroupItem>
-                        <ToggleGroupItem value="barbell">Barbell</ToggleGroupItem>
-                        <ToggleGroupItem value="machine">Machine</ToggleGroupItem>
-                      </ToggleGroup>
-                    </div>
-                  </div>
+                <div className="text-center text-sm text-muted-foreground">
+                  Click on a muscle group to see targeted exercises
                 </div>
               </div>
 

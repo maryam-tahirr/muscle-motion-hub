@@ -64,7 +64,64 @@ const MaleMuscleMap: React.FC<MaleMuscleMapProps> = ({ selectedMuscle, onMuscleS
           onClick={() => handleMuscleClick('shoulders')}
         />
         
-        {/* Add more muscle groups as needed */}
+        {/* Back */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'back' ? 'active' : ''}`}
+          d="M95,80 C105,100 115,120 125,140 C135,120 145,100 155,80 C145,90 135,95 125,95 C115,95 105,90 95,80 Z" 
+          onClick={() => handleMuscleClick('back')}
+          transform="translate(0, 200) scale(1, -1)"
+        />
+        
+        {/* Triceps (left) */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'triceps' ? 'active' : ''}`}
+          d="M70,105 C72,115 75,125 78,135 C75,125 70,115 60,105 C63,100 67,100 70,105 Z" 
+          onClick={() => handleMuscleClick('triceps')}
+        />
+        
+        {/* Triceps (right) */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'triceps' ? 'active' : ''}`}
+          d="M180,105 C178,115 175,125 172,135 C175,125 180,115 190,105 C187,100 183,100 180,105 Z" 
+          onClick={() => handleMuscleClick('triceps')}
+        />
+        
+        {/* Forearms (left) */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'forearms' ? 'active' : ''}`}
+          d="M75,135 C70,145 65,155 60,165 C65,160 70,150 78,140 C77,142 76,140 75,135 Z" 
+          onClick={() => handleMuscleClick('forearms')}
+        />
+        
+        {/* Forearms (right) */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'forearms' ? 'active' : ''}`}
+          d="M175,135 C180,145 185,155 190,165 C185,160 180,150 172,140 C173,142 174,140 175,135 Z" 
+          onClick={() => handleMuscleClick('forearms')}
+        />
+        
+        {/* Calves */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'calves' ? 'active' : ''}`}
+          d="M110,280 C115,290 120,300 125,310 C130,300 135,290 140,280 C135,285 130,287 125,287 C120,287 115,285 110,280 Z" 
+          onClick={() => handleMuscleClick('calves')}
+        />
+        
+        {/* Glutes */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'glutes' ? 'active' : ''}`}
+          d="M110,190 C115,195 120,197 125,197 C130,197 135,195 140,190 C135,205 130,210 125,210 C120,210 115,205 110,190 Z" 
+          onClick={() => handleMuscleClick('glutes')}
+          transform="translate(0, 195) scale(1, -1)"
+        />
+        
+        {/* Hamstrings */}
+        <path 
+          className={`muscle-group ${selectedMuscle === 'hamstrings' ? 'active' : ''}`}
+          d="M110,220 C115,240 120,260 125,280 C130,260 135,240 140,220 C135,230 130,235 125,235 C120,235 115,230 110,220 Z" 
+          onClick={() => handleMuscleClick('hamstrings')}
+          transform="translate(0, 480) scale(1, -1)"
+        />
       </svg>
     </div>
   );
