@@ -103,8 +103,8 @@ const mockBodyParts = [
 
 export async function fetchExercisesByBodyPart(bodyPart: string): Promise<Exercise[]> {
   try {
-    // Fix: use conditional to check if API_KEY exists instead of comparing with empty string
-    if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    // Fix: just check if API_KEY exists, no string comparison
+    if (!API_KEY) {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.filter(ex => ex.bodyPart === bodyPart);
     }
@@ -133,8 +133,8 @@ export async function fetchExercisesByBodyPart(bodyPart: string): Promise<Exerci
 
 export async function fetchExercisesByMuscle(muscle: string): Promise<Exercise[]> {
   try {
-    // Fix: use conditional to check if API_KEY exists instead of comparing with empty string
-    if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    // Fix: just check if API_KEY exists, no string comparison
+    if (!API_KEY) {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.filter(ex => ex.target === muscle);
     }
@@ -163,8 +163,8 @@ export async function fetchExercisesByMuscle(muscle: string): Promise<Exercise[]
 
 export async function fetchExerciseById(id: string): Promise<Exercise | null> {
   try {
-    // Fix: use conditional to check if API_KEY exists instead of comparing with empty string
-    if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    // Fix: just check if API_KEY exists, no string comparison
+    if (!API_KEY) {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.find(ex => ex.id === id) || null;
     }
@@ -194,8 +194,8 @@ export async function fetchExerciseById(id: string): Promise<Exercise | null> {
 
 export async function fetchAllBodyParts(): Promise<string[]> {
   try {
-    // Fix: use conditional to check if API_KEY exists instead of comparing with empty string
-    if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    // Fix: just check if API_KEY exists, no string comparison
+    if (!API_KEY) {
       console.warn("Using mock data as API key is not configured");
       return mockBodyParts;
     }
