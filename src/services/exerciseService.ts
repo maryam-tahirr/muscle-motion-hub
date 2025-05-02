@@ -103,7 +103,8 @@ const mockBodyParts = [
 
 export async function fetchExercisesByBodyPart(bodyPart: string): Promise<Exercise[]> {
   try {
-    if (!API_KEY || API_KEY === "YOUR_EXERCISEDB_API_KEY") {
+    // Compare with empty string instead of a specific placeholder
+    if (!API_KEY || API_KEY === "") {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.filter(ex => ex.bodyPart === bodyPart);
     }
@@ -132,7 +133,8 @@ export async function fetchExercisesByBodyPart(bodyPart: string): Promise<Exerci
 
 export async function fetchExercisesByMuscle(muscle: string): Promise<Exercise[]> {
   try {
-    if (!API_KEY || API_KEY === "YOUR_EXERCISEDB_API_KEY") {
+    // Compare with empty string instead of a specific placeholder
+    if (!API_KEY || API_KEY === "") {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.filter(ex => ex.target === muscle);
     }
@@ -161,7 +163,8 @@ export async function fetchExercisesByMuscle(muscle: string): Promise<Exercise[]
 
 export async function fetchExerciseById(id: string): Promise<Exercise | null> {
   try {
-    if (!API_KEY || API_KEY === "YOUR_EXERCISEDB_API_KEY") {
+    // Compare with empty string instead of a specific placeholder
+    if (!API_KEY || API_KEY === "") {
       console.warn("Using mock data as API key is not configured");
       return mockExercises.find(ex => ex.id === id) || null;
     }
@@ -191,7 +194,8 @@ export async function fetchExerciseById(id: string): Promise<Exercise | null> {
 
 export async function fetchAllBodyParts(): Promise<string[]> {
   try {
-    if (!API_KEY || API_KEY === "YOUR_EXERCISEDB_API_KEY") {
+    // Compare with empty string instead of a specific placeholder
+    if (!API_KEY || API_KEY === "") {
       console.warn("Using mock data as API key is not configured");
       return mockBodyParts;
     }

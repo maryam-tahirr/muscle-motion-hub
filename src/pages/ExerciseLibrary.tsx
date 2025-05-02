@@ -10,11 +10,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, Search } from 'lucide-react';
 import ExerciseDetail from '@/components/ExerciseDetail';
+import { 
+  Dialog,
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { toast } from '@/components/ui/sonner';
 
 const ExerciseLibrary = () => {
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'name' | 'target' | 'equipment'>('name');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [savedExercises, setSavedExercises] = useState<string[]>([]);
 
   // Fetch all body parts
   const { 
@@ -35,16 +44,55 @@ const ExerciseLibrary = () => {
     enabled: !!selectedBodyPart,
   });
 
+  // Load saved exercises
+  useEffect(() => {
+    const savedIds = localStorage.getItem('savedExercises');
+    if (savedIds) {
+      setSavedExercises(JSON.parse(savedIds));
+    }
+  }, []);
+
   useEffect(() => {
     if (bodyParts.length > 0 && !selectedBodyPart) {
       setSelectedBodyPart(bodyParts[0]);
     }
   }, [bodyParts, selectedBodyPart]);
 
-  // Filter exercises by search term
-  const filteredExercises = exercises.filter(
-    (exercise) => exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Advanced filtering for exercises based on search type and term
+  const filteredExercises = exercises.filter(exercise => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    
+    switch(searchType) {
+      case 'name':
+        return exercise.name.toLowerCase().includes(searchLower);
+      case 'target':
+        return exercise.target.toLowerCase().includes(searchLower);
+      case 'equipment':
+        return exercise.equipment.toLowerCase().includes(searchLower);
+      default:
+        return true;
+    }
+  });
+
+  const toggleSaveExercise = (e: React.MouseEvent, exercise: Exercise) => {
+    e.stopPropagation();
+    
+    const savedIds = [...savedExercises];
+    const exerciseIndex = savedIds.indexOf(exercise.id);
+    
+    if (exerciseIndex > -1) {
+      savedIds.splice(exerciseIndex, 1);
+      toast.success('Exercise removed from favorites');
+    } else {
+      savedIds.push(exercise.id);
+      toast.success('Exercise saved to favorites');
+    }
+    
+    localStorage.setItem('savedExercises', JSON.stringify(savedIds));
+    setSavedExercises(savedIds);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -64,15 +112,24 @@ const ExerciseLibrary = () => {
             <div className="w-full md:w-64 shrink-0">
               <div className="sticky top-24">
                 <div className="mb-6">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search exercises..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search exercises..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <Tabs defaultValue="name" className="w-full" onValueChange={(value) => setSearchType(value as any)}>
+                      <TabsList className="w-full">
+                        <TabsTrigger value="name" className="flex-1">Name</TabsTrigger>
+                        <TabsTrigger value="target" className="flex-1">Muscle</TabsTrigger>
+                        <TabsTrigger value="equipment" className="flex-1">Equipment</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </div>
                 </div>
                 
@@ -136,7 +193,7 @@ const ExerciseLibrary = () => {
                     <div className="text-center py-12">
                       <p className="text-muted-foreground">
                         {searchTerm
-                          ? "No exercises found matching your search."
+                          ? `No exercises found matching your search for "${searchTerm}" in ${searchType}.`
                           : "No exercises found for this body part."}
                       </p>
                     </div>
@@ -158,12 +215,12 @@ const ExerciseLibrary = () => {
                               variant="ghost" 
                               size="icon" 
                               className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Save to favorites functionality would go here
-                              }}
+                              onClick={(e) => toggleSaveExercise(e, exercise)}
                             >
-                              <Heart className="h-4 w-4" />
+                              <Heart 
+                                className="h-4 w-4" 
+                                fill={savedExercises.includes(exercise.id) ? "currentColor" : "none"} 
+                              />
                             </Button>
                           </div>
                           <CardContent className="p-4">
