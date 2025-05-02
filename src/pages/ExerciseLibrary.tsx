@@ -4,19 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/Navbar';
 import { fetchAllBodyParts, fetchExercisesByBodyPart, Exercise } from '@/services/exerciseService';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Search } from 'lucide-react';
-import ExerciseDetail from '@/components/ExerciseDetail';
-import { 
-  Dialog,
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
+import ExerciseDetail from '@/components/ExerciseDetail';
+import SearchBar from '@/components/ExerciseLibrary/SearchBar';
+import BodyPartList from '@/components/ExerciseLibrary/BodyPartList';
+import ExerciseGrid from '@/components/ExerciseLibrary/ExerciseGrid';
 
 const ExerciseLibrary = () => {
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>('');
@@ -58,24 +50,6 @@ const ExerciseLibrary = () => {
     }
   }, [bodyParts, selectedBodyPart]);
 
-  // Advanced filtering for exercises based on search type and term
-  const filteredExercises = exercises.filter(exercise => {
-    if (!searchTerm) return true;
-    
-    const searchLower = searchTerm.toLowerCase();
-    
-    switch(searchType) {
-      case 'name':
-        return exercise.name.toLowerCase().includes(searchLower);
-      case 'target':
-        return exercise.target.toLowerCase().includes(searchLower);
-      case 'equipment':
-        return exercise.equipment.toLowerCase().includes(searchLower);
-      default:
-        return true;
-    }
-  });
-
   const toggleSaveExercise = (e: React.MouseEvent, exercise: Exercise) => {
     e.stopPropagation();
     
@@ -112,49 +86,21 @@ const ExerciseLibrary = () => {
             <div className="w-full md:w-64 shrink-0">
               <div className="sticky top-24">
                 <div className="mb-6">
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="search"
-                        placeholder="Search exercises..."
-                        className="pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <Tabs defaultValue="name" className="w-full" onValueChange={(value) => setSearchType(value as any)}>
-                      <TabsList className="w-full">
-                        <TabsTrigger value="name" className="flex-1">Name</TabsTrigger>
-                        <TabsTrigger value="target" className="flex-1">Muscle</TabsTrigger>
-                        <TabsTrigger value="equipment" className="flex-1">Equipment</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
+                  <SearchBar 
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    searchType={searchType}
+                    setSearchType={setSearchType}
+                  />
                 </div>
                 
                 <h3 className="font-medium mb-2">Body Parts</h3>
-                
-                {isLoadingBodyParts ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Skeleton key={i} className="h-8 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {bodyParts.map((bodyPart) => (
-                      <Button
-                        key={bodyPart}
-                        variant={selectedBodyPart === bodyPart ? "secondary" : "ghost"}
-                        className="justify-start w-full font-normal"
-                        onClick={() => setSelectedBodyPart(bodyPart)}
-                      >
-                        {bodyPart.charAt(0).toUpperCase() + bodyPart.slice(1)}
-                      </Button>
-                    ))}
-                  </div>
-                )}
+                <BodyPartList 
+                  bodyParts={bodyParts}
+                  selectedBodyPart={selectedBodyPart}
+                  isLoading={isLoadingBodyParts}
+                  onSelectBodyPart={setSelectedBodyPart}
+                />
               </div>
             </div>
             
@@ -177,60 +123,15 @@ const ExerciseLibrary = () => {
                     {selectedBodyPart} Exercises
                   </h2>
                   
-                  {isLoadingExercises ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <Card key={i} className="overflow-hidden">
-                          <Skeleton className="h-48 w-full" />
-                          <CardContent className="p-4">
-                            <Skeleton className="h-4 w-3/4 mb-2" />
-                            <Skeleton className="h-4 w-1/2" />
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : filteredExercises.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">
-                        {searchTerm
-                          ? `No exercises found matching your search for "${searchTerm}" in ${searchType}.`
-                          : "No exercises found for this body part."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredExercises.map((exercise) => (
-                        <Card 
-                          key={exercise.id} 
-                          className="overflow-hidden hover:border-primary/30 transition-all cursor-pointer"
-                          onClick={() => setSelectedExercise(exercise)}
-                        >
-                          <div className="relative h-48 bg-muted flex items-center justify-center overflow-hidden">
-                            <img 
-                              src={exercise.gifUrl} 
-                              alt={exercise.name} 
-                              className="h-full w-full object-cover"
-                            />
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
-                              onClick={(e) => toggleSaveExercise(e, exercise)}
-                            >
-                              <Heart 
-                                className="h-4 w-4" 
-                                fill={savedExercises.includes(exercise.id) ? "currentColor" : "none"} 
-                              />
-                            </Button>
-                          </div>
-                          <CardContent className="p-4">
-                            <h3 className="font-medium line-clamp-1 capitalize">{exercise.name}</h3>
-                            <p className="text-sm text-muted-foreground mt-1 capitalize">{exercise.target}</p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                  <ExerciseGrid 
+                    exercises={exercises}
+                    searchTerm={searchTerm}
+                    searchType={searchType}
+                    isLoading={isLoadingExercises}
+                    savedExercises={savedExercises}
+                    onSelectExercise={setSelectedExercise}
+                    onToggleSave={toggleSaveExercise}
+                  />
                 </div>
               )}
             </div>
