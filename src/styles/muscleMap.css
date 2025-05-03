@@ -1,5 +1,4 @@
 
-/* Custom styles for muscle map */
 .muscle-group {
   fill: rgba(139, 92, 246, 0.2); /* Match primary color with slight opacity */
   stroke: rgba(139, 92, 246, 0.5);
@@ -16,47 +15,4 @@
   fill: rgba(139, 92, 246, 0.8);
   stroke: rgba(139, 92, 246, 1);
   stroke-width: 2;
-}
-
-/* Styles for image maps */
-area {
-  cursor: pointer;
-}
-
-/* Custom muscle highlight colors */
-.fill-muscle-inactive {
-  fill: rgba(139, 92, 246, 0.2);
-}
-
-.fill-muscle-hover {
-  fill: rgba(139, 92, 246, 0.5);
-}
-
-.fill-muscle-active {
-  fill: rgba(139, 92, 246, 0.4);
-}
-
-/* Tooltip styles */
-.muscle-tooltip {
-  position: absolute;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  pointer-events: none;
-  z-index: 10;
-  transform: translate(-50%, -100%);
-  margin-top: -5px;
-}
-
-.muscle-tooltip::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 5px 5px 0;
-  border-style: solid;
-  border-color: rgba(0, 0, 0, 0.8) transparent transparent;
 }
