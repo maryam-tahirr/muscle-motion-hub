@@ -23,6 +23,7 @@ type MuscleGroup =
   | 'triceps' 
   | 'glutes' 
   | 'hamstrings' 
+  | 'traps'
   | null;
 
 type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'all';
@@ -43,9 +44,9 @@ const MuscleViewer = () => {
     <div className="container mx-auto py-4">
       <Card className="bg-card/50 backdrop-blur supports-backdrop-blur:bg-card/30 border-border">
         <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
             <h2 className="text-2xl font-bold">Interactive Muscle Map</h2>
-            <div className="space-y-3">
+            <div className="space-y-3 w-full md:w-auto">
               <div className="flex items-center justify-between">
                 <Label htmlFor="show-animations" className="cursor-pointer mr-2">Show animations</Label>
                 <Switch 
@@ -99,10 +100,10 @@ const MuscleViewer = () => {
             <div className="grid md:grid-cols-2 gap-8">
               <div className="flex flex-col gap-4">
                 <div className="flex justify-center">
-                  <TabsContent value="male" className="mt-0 w-full max-w-md">
+                  <TabsContent value="male" className="mt-0 w-full">
                     <MaleMuscleMap selectedMuscle={selectedMuscle} onMuscleSelect={handleMuscleSelect} />
                   </TabsContent>
-                  <TabsContent value="female" className="mt-0 w-full max-w-md">
+                  <TabsContent value="female" className="mt-0 w-full">
                     <FemaleMuscleMap selectedMuscle={selectedMuscle} onMuscleSelect={handleMuscleSelect} />
                   </TabsContent>
                 </div>
@@ -110,6 +111,14 @@ const MuscleViewer = () => {
                 <div className="text-center text-sm text-muted-foreground">
                   Click on a muscle group to see targeted exercises
                 </div>
+                
+                {selectedMuscle && (
+                  <div className="text-center">
+                    <div className="inline-block bg-muted/30 text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                      Selected: <span className="capitalize">{selectedMuscle}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -121,7 +130,7 @@ const MuscleViewer = () => {
                       </h3>
                       <Button variant="outline" size="sm" asChild>
                         <a href="/exercise-library" target="_blank">
-                          <Dumbbell className="h-4 w-4 mr-1" /> More exercises
+                          <Dumbbell className="h-4 w-4 mr-2" /> More exercises
                         </a>
                       </Button>
                     </div>
