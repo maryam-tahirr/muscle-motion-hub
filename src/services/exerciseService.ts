@@ -2,7 +2,7 @@
 import { toast } from "@/components/ui/sonner";
 
 // This would be stored securely in production
-const API_KEY = "f571d44fd8msh4e0a581f5ce2f94p1965dajsn1dbe2a9f4bc4"; 
+const API_KEY = "738a219691msh262cf31ffa95140p1ac658jsn4b2bcd24015c"; 
 const API_HOST = "exercisedb.p.rapidapi.com";
 
 interface Exercise {

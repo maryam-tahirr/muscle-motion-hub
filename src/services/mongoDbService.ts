@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/sonner";
 
 // Define the MongoDB API base URL
 // This would be your actual MongoDB API endpoint
-const API_BASE_URL = "https://your-mongodb-api-url.com/api";
+const API_BASE_URL = "mongodb://localhost:27017/muscle-motion-hub";
 
 // Helper function for making API requests
 async function apiRequest<T>(

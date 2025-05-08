@@ -1,9 +1,9 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Exercise } from '@/services/exerciseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import ExerciseCard from './ExerciseCard';
+import { fetchItems } from '@/services/itemService';
 
 interface ExerciseGridProps {
   exercises: Exercise[];
@@ -22,15 +22,28 @@ const ExerciseGrid = ({
   isLoading,
   savedExercises,
   onSelectExercise,
-  onToggleSave
+  onToggleSave,
 }: ExerciseGridProps) => {
-  // Filter exercises based on search type and term
-  const filteredExercises = exercises.filter(exercise => {
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const getItems = async () => {
+      try {
+        const data = await fetchItems();
+        setItems(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    getItems();
+  }, []);
+
+  const filteredExercises = exercises.filter((exercise) => {
     if (!searchTerm) return true;
-    
+
     const searchLower = searchTerm.toLowerCase();
-    
-    switch(searchType) {
+
+    switch (searchType) {
       case 'name':
         return exercise.name.toLowerCase().includes(searchLower);
       case 'target':
@@ -64,7 +77,7 @@ const ExerciseGrid = ({
         <p className="text-muted-foreground">
           {searchTerm
             ? `No exercises found matching your search for "${searchTerm}" in ${searchType}.`
-            : "No exercises found for this body part."}
+            : 'No exercises found for this body part.'}
         </p>
       </div>
     );
@@ -81,6 +94,16 @@ const ExerciseGrid = ({
           onToggleSave={onToggleSave}
         />
       ))}
+
+      {/* Example output of fetched items from backend */}
+      <div className="col-span-full mt-8">
+        <h2 className="text-xl font-bold mb-2">Items from Backend</h2>
+        <ul className="list-disc list-inside">
+          {items.map((item: any, index: number) => (
+            <li key={index}>{item.name}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
