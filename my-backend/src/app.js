@@ -1,15 +1,40 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const routes = require('./routes/index');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const cookieSession = require('cookie-session');
+const { logRequest } = require('./middlewares/index');
+require('dotenv').config();
+require('./config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
 
+// Connect to MongoDB
+mongoose.connect(process.env.DATABASE_URL)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+// Cookie session
+app.use(cookieSession({
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  keys: [process.env.COOKIE_KEY]
+}));
+
+// Initialize passport
+app.use(passport.initialize());
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173',
+  credentials: true
+}));
 app.use(bodyParser.json());
+app.use(logRequest);
 
 // API Routes
 app.use('/api', routes);

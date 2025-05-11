@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Exercises from "./pages/Exercises";
 import Calculators from "./pages/Calculators";
@@ -16,9 +16,34 @@ import ExerciseLibrary from "./pages/ExerciseLibrary";
 import SavedExercises from "./pages/SavedExercises";
 import WorkoutBuilder from "./pages/WorkoutBuilder";
 import WorkoutExecution from "./pages/WorkoutExecution";
+import AuthCallback from "./pages/AuthCallback";
+import AdminPanel from "./pages/AdminPanel";
+import authService from "./services/authService";
 import "./styles/muscleMap.css";
 
 const queryClient = new QueryClient();
+
+// Protected route component
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = authService.isAuthenticated();
+  return isAuthenticated ? children : <Navigate to="/signin" />;
+};
+
+// Admin route component
+const AdminRoute = ({ children }) => {
+  const isAuthenticated = authService.isAuthenticated();
+  const isAdmin = authService.isAdmin();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,10 +59,28 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/auth-callback" element={<AuthCallback />} />
             <Route path="/exercise-library" element={<ExerciseLibrary />} />
-            <Route path="/saved-exercises" element={<SavedExercises />} />
-            <Route path="/workout-builder" element={<WorkoutBuilder />} />
-            <Route path="/workout/:id" element={<WorkoutExecution />} />
+            <Route path="/saved-exercises" element={
+              <ProtectedRoute>
+                <SavedExercises />
+              </ProtectedRoute>
+            } />
+            <Route path="/workout-builder" element={
+              <ProtectedRoute>
+                <WorkoutBuilder />
+              </ProtectedRoute>
+            } />
+            <Route path="/workout/:id" element={
+              <ProtectedRoute>
+                <WorkoutExecution />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
