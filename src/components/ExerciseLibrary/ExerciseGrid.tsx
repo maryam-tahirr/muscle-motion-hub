@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Exercise } from '@/services/exerciseService';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,14 +26,19 @@ const ExerciseGrid = ({
   onToggleSave,
 }: ExerciseGridProps) => {
   const [items, setItems] = useState<any[]>([]);
+  const [isLoadingItems, setIsLoadingItems] = useState<boolean>(false);
 
   useEffect(() => {
     const getItems = async () => {
+      setIsLoadingItems(true);
       try {
         const data = await fetchItems();
-        setItems(data);
+        setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error(err);
+        setItems([]);
+      } finally {
+        setIsLoadingItems(false);
       }
     };
     getItems();
@@ -98,11 +104,17 @@ const ExerciseGrid = ({
       {/* Example output of fetched items from backend */}
       <div className="col-span-full mt-8">
         <h2 className="text-xl font-bold mb-2">Items from Backend</h2>
-        <ul className="list-disc list-inside">
-          {items.map((item: any, index: number) => (
-            <li key={index}>{item.name}</li>
-          ))}
-        </ul>
+        {isLoadingItems ? (
+          <p>Loading items...</p>
+        ) : items.length > 0 ? (
+          <ul className="list-disc list-inside">
+            {items.map((item, index) => (
+              <li key={index}>{item.name}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>No items found</p>
+        )}
       </div>
     </div>
   );

@@ -10,11 +10,13 @@ export const fetchItems = async () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
     const response = await axios.get('/api/items', { headers });
-    return response.data;
+    // Ensure we're returning an array even if the response is empty or invalid
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching items:', error);
     toast.error('Failed to fetch items');
-    throw error;
+    // Return an empty array on error
+    return [];
   }
 };
 
