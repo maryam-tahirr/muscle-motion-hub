@@ -9,7 +9,8 @@ const {
     getItemById,
     createItem,
     updateItem,
-    deleteItem
+    deleteItem,
+    getUserById
 } = require('../controllers/index');
 
 // Auth routes
@@ -17,6 +18,9 @@ router.use('/auth', authRoutes);
 
 // Admin routes
 router.use('/admin', adminRoutes);
+
+// User routes
+router.get('/users/:id', authenticateToken, getUserById);
 
 // Protected item routes
 router.get('/items', getAllItems);

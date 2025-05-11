@@ -1,74 +1,61 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/sonner';
-import { Exercise } from '@/services/exerciseService';
-
-// In a real app, this would be stored in a database
-const getSavedExercises = async (): Promise<Exercise[]> => {
-  // This would be a real API call in a production app
-  const savedIdsStr = localStorage.getItem('savedExercises');
-  if (!savedIdsStr) return [];
-  
-  const savedIds = JSON.parse(savedIdsStr);
-  
-  // For demo purposes, return mock exercises
-  return [
-    {
-      id: "0001",
-      name: "barbell bench press",
-      bodyPart: "chest",
-      equipment: "barbell",
-      gifUrl: "https://v2.exercisedb.io/image/QU4rCpbb5pPmQS",
-      target: "pectorals",
-      secondaryMuscles: ["triceps", "shoulders"],
-      instructions: [
-        "Lie on a flat bench with your feet flat on the floor.",
-        "Grip the barbell slightly wider than shoulder-width.",
-        "Lower the barbell to your mid-chest.",
-        "Press the barbell back to the starting position."
-      ]
-    },
-    {
-      id: "0003",
-      name: "bodyweight squat",
-      bodyPart: "upper legs",
-      equipment: "body weight",
-      gifUrl: "https://v2.exercisedb.io/image/x86mm-eSZsj73H",
-      target: "quads",
-      secondaryMuscles: ["glutes", "hamstrings", "calves"],
-      instructions: [
-        "Stand with feet shoulder-width apart.",
-        "Bend your knees and lower your hips as if sitting in a chair.",
-        "Keep your chest up and back straight.",
-        "Lower until thighs are parallel to the ground, then push back up."
-      ]
-    }
-  ];
-};
+import { Exercise, fetchExercisesByIds } from '@/services/exerciseService';
 
 const SavedExercises = () => {
-  const { data: savedExercises = [], isLoading, refetch } = useQuery({
-    queryKey: ['savedExercises'],
-    queryFn: getSavedExercises
-  });
+  const [savedExercises, setSavedExercises] = useState<Exercise[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Get saved exercise IDs from localStorage
+  const getSavedExerciseIds = (): string[] => {
+    const savedIdsStr = localStorage.getItem('savedExercises');
+    return savedIdsStr ? JSON.parse(savedIdsStr) : [];
+  };
+
+  // Load saved exercises
+  useEffect(() => {
+    const loadSavedExercises = async () => {
+      try {
+        setIsLoading(true);
+        const savedIds = getSavedExerciseIds();
+        
+        if (savedIds.length === 0) {
+          setSavedExercises([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch exercises by IDs from API
+        const exercises = await fetchExercisesByIds(savedIds);
+        setSavedExercises(exercises);
+      } catch (err) {
+        console.error("Failed to load saved exercises:", err);
+        toast.error("Failed to load saved exercises");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSavedExercises();
+  }, []);
 
   const removeFromSaved = (id: string) => {
-    // In a real app, this would make an API call
-    const savedIdsStr = localStorage.getItem('savedExercises');
-    if (!savedIdsStr) return;
-    
-    const savedIds = JSON.parse(savedIdsStr);
+    // Get current saved IDs
+    const savedIds = getSavedExerciseIds();
+    // Filter out the ID to remove
     const updatedIds = savedIds.filter((savedId: string) => savedId !== id);
-    
+    // Update localStorage
     localStorage.setItem('savedExercises', JSON.stringify(updatedIds));
+    // Update state
+    setSavedExercises(prev => prev.filter(exercise => exercise.id !== id));
     toast.success('Exercise removed from favorites');
-    refetch();
   };
 
   return (

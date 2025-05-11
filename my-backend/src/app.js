@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const cookieSession = require('cookie-session');
 const { logRequest } = require('./middlewares/index');
+const { createInitialAdminUser } = require('./controllers/index');
 require('dotenv').config();
 require('./config/passport');
 
@@ -16,7 +17,11 @@ const PORT = process.env.PORT || 5050;
 
 // Connect to MongoDB
 mongoose.connect(process.env.DATABASE_URL)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => {
+    console.log('Connected to MongoDB');
+    // Create initial admin user
+    createInitialAdminUser();
+  })
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Cookie session

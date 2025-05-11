@@ -11,28 +11,43 @@ import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Plus, Trash2, Play, Pause, Clock, X } from 'lucide-react';
+import { Search, Plus, Trash2, Play, Pause, Clock, X, Timer } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 type WorkoutExercise = {
   exercise: Exercise;
   duration: number;
 };
 
+type RestPeriod = {
+  duration: number;
+  isRest: true;
+};
+
+type WorkoutItem = WorkoutExercise | RestPeriod;
+
+const isRestPeriod = (item: WorkoutItem): item is RestPeriod => {
+  return 'isRest' in item && item.isRest === true;
+};
+
 const WorkoutBuilder = () => {
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'name' | 'target' | 'equipment'>('name');
-  const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
+  const [workoutItems, setWorkoutItems] = useState<WorkoutItem[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [savedExercises, setSavedExercises] = useState<Exercise[]>([]);
   const [savedIdsMap, setSavedIdsMap] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState('search');
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [isRunningWorkout, setIsRunningWorkout] = useState(false);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const whistleRef = useRef<HTMLAudioElement | null>(null);
+  const countdownBeepRef = useRef<HTMLAudioElement | null>(null);
   
   // Fetch all body parts
   const { data: bodyParts = [], isLoading: isLoadingBodyParts } = useQuery({
@@ -104,31 +119,49 @@ const WorkoutBuilder = () => {
 
   // Handle adding exercise to workout
   const addExerciseToWorkout = (exercise: Exercise) => {
-    setWorkoutExercises([...workoutExercises, { exercise, duration: 45 }]);
+    setWorkoutItems([...workoutItems, { exercise, duration: 45 }]);
   };
 
-  // Handle removing exercise from workout
-  const removeExerciseFromWorkout = (index: number) => {
-    const updatedWorkout = [...workoutExercises];
+  // Handle adding rest period to workout
+  const addRestPeriod = () => {
+    setWorkoutItems([...workoutItems, { duration: 30, isRest: true }]);
+    toast.success("Rest period added");
+  };
+
+  // Handle removing item from workout
+  const removeWorkoutItem = (index: number) => {
+    const updatedWorkout = [...workoutItems];
     updatedWorkout.splice(index, 1);
-    setWorkoutExercises(updatedWorkout);
+    setWorkoutItems(updatedWorkout);
   };
 
-  // Update exercise duration
-  const updateExerciseDuration = (index: number, duration: number) => {
-    const updatedWorkout = [...workoutExercises];
+  // Update exercise or rest duration
+  const updateItemDuration = (index: number, duration: number) => {
+    const updatedWorkout = [...workoutItems];
     updatedWorkout[index].duration = duration;
-    setWorkoutExercises(updatedWorkout);
+    setWorkoutItems(updatedWorkout);
   };
 
   // Start workout
   const startWorkout = () => {
-    if (workoutExercises.length === 0) return;
+    if (workoutItems.length === 0) return;
     
+    // Start the 3, 2, 1 countdown
+    setIsCountingDown(true);
+    setCountdown(3);
+  };
+
+  // Start the actual workout after countdown
+  const startActualWorkout = () => {
     setIsRunningWorkout(true);
-    setCurrentExerciseIndex(0);
-    setTimeRemaining(workoutExercises[0].duration);
+    setCurrentItemIndex(0);
+    setTimeRemaining(workoutItems[0].duration);
     setIsPaused(false);
+    
+    // Play whistle to indicate workout has started
+    if (whistleRef.current) {
+      whistleRef.current.play().catch(e => console.error("Failed to play whistle:", e));
+    }
   };
 
   // Pause/resume workout
@@ -139,14 +172,38 @@ const WorkoutBuilder = () => {
   // Stop workout
   const stopWorkout = () => {
     setIsRunningWorkout(false);
-    setCurrentExerciseIndex(0);
+    setCurrentItemIndex(0);
     setTimeRemaining(0);
     setIsPaused(false);
   };
 
+  // Countdown effect
+  useEffect(() => {
+    if (!isCountingDown) return;
+
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        // Play beep sound for countdown
+        if (countdownBeepRef.current && prev > 0) {
+          countdownBeepRef.current.play().catch(e => console.error("Failed to play countdown beep:", e));
+        }
+        
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsCountingDown(false);
+          startActualWorkout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isCountingDown]);
+
   // Timer effect
   useEffect(() => {
-    if (!isRunningWorkout || isPaused) return;
+    if (!isRunningWorkout || isPaused || isCountingDown) return;
 
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
@@ -157,16 +214,17 @@ const WorkoutBuilder = () => {
           }
           
           // Move to next exercise
-          if (currentExerciseIndex < workoutExercises.length - 1) {
-            setCurrentExerciseIndex(prevIndex => {
+          if (currentItemIndex < workoutItems.length - 1) {
+            setCurrentItemIndex(prevIndex => {
               const nextIndex = prevIndex + 1;
               return nextIndex;
             });
-            return workoutExercises[currentExerciseIndex + 1].duration;
+            return workoutItems[currentItemIndex + 1].duration;
           } else {
             // Workout complete
             clearInterval(interval);
             setIsRunningWorkout(false);
+            toast.success("Workout complete! Great job!");
             return 0;
           }
         }
@@ -175,7 +233,7 @@ const WorkoutBuilder = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunningWorkout, isPaused, currentExerciseIndex, workoutExercises]);
+  }, [isRunningWorkout, isPaused, currentItemIndex, workoutItems, isCountingDown]);
   
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -185,44 +243,69 @@ const WorkoutBuilder = () => {
   };
   
   // Calculate total workout time
-  const totalWorkoutTime = workoutExercises.reduce((acc, curr) => acc + curr.duration, 0);
+  const totalWorkoutTime = workoutItems.reduce((acc, curr) => acc + curr.duration, 0);
+
+  // Get current item
+  const getCurrentItem = () => {
+    return workoutItems[currentItemIndex];
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      {/* Audio element for whistle sound */}
+      {/* Audio elements for sounds */}
       <audio ref={whistleRef} src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav" />
+      <audio ref={countdownBeepRef} src="https://www.soundjay.com/misc/sounds/beep-07.mp3" />
       
       <main className="flex-1 pt-20 pb-8">
         <div className="container mx-auto max-w-7xl px-4">
           <div className="py-6">
             <h1 className="text-3xl font-bold mb-2">Custom Workout Builder</h1>
             <p className="text-muted-foreground">
-              Create your own custom workout by adding exercises and setting durations
+              Create your own custom workout by adding exercises and rest periods
             </p>
           </div>
+          
+          {isCountingDown ? (
+            <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="text-center">
+                <h2 className="text-6xl font-bold mb-8">{countdown}</h2>
+                <p className="text-xl text-muted-foreground">Get Ready!</p>
+              </div>
+            </div>
+          ) : null}
           
           {isRunningWorkout ? (
             <div className="max-w-lg mx-auto">
               <Card className="bg-card/95 backdrop-blur">
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">
-                    {currentExerciseIndex + 1}/{workoutExercises.length}: {workoutExercises[currentExerciseIndex].exercise.name}
+                    {currentItemIndex + 1}/{workoutItems.length}: {
+                      isRestPeriod(getCurrentItem()) 
+                        ? "Rest Period" 
+                        : (getCurrentItem() as WorkoutExercise).exercise.name
+                    }
                   </CardTitle>
-                  <CardDescription className="capitalize">
-                    Target: {workoutExercises[currentExerciseIndex].exercise.target}
-                  </CardDescription>
+                  {!isRestPeriod(getCurrentItem()) && (
+                    <CardDescription className="capitalize">
+                      Target: {(getCurrentItem() as WorkoutExercise).exercise.target}
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Exercise GIF */}
+                  {/* Exercise GIF or Rest Icon */}
                   <div className="relative h-64 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                    <img 
-                      src={workoutExercises[currentExerciseIndex].exercise.gifUrl} 
-                      alt={workoutExercises[currentExerciseIndex].exercise.name} 
-                      className="h-full w-auto object-contain"
-                    />
+                    {isRestPeriod(getCurrentItem()) ? (
+                      <Timer className="h-24 w-24 text-primary/50" />
+                    ) : (
+                      <img 
+                        src={(getCurrentItem() as WorkoutExercise).exercise.gifUrl} 
+                        alt={(getCurrentItem() as WorkoutExercise).exercise.name} 
+                        className="h-full w-auto object-contain"
+                      />
+                    )}
                   </div>
                   
                   {/* Timer */}
@@ -403,14 +486,27 @@ const WorkoutBuilder = () => {
               <div className="col-span-1">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Your Workout</CardTitle>
-                    <CardDescription>
-                      {workoutExercises.length} exercises • {formatTime(totalWorkoutTime)} total
-                    </CardDescription>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Your Workout</CardTitle>
+                        <CardDescription>
+                          {workoutItems.length} items • {formatTime(totalWorkoutTime)} total
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={addRestPeriod}
+                        disabled={workoutItems.length === 0}
+                      >
+                        <Timer className="h-4 w-4 mr-2" />
+                        Add Rest
+                      </Button>
+                    </div>
                   </CardHeader>
                   
                   <CardContent>
-                    {workoutExercises.length === 0 ? (
+                    {workoutItems.length === 0 ? (
                       <div className="text-center py-12">
                         <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                         <p className="font-medium">No exercises yet</p>
@@ -420,20 +516,28 @@ const WorkoutBuilder = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {workoutExercises.map((item, index) => (
-                          <Card key={index} className="bg-card/50">
+                        {workoutItems.map((item, index) => (
+                          <Card key={index} className={`bg-card/50 ${isRestPeriod(item) ? 'border-dashed border-primary/30' : ''}`}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                    <img 
-                                      src={item.exercise.gifUrl} 
-                                      alt={item.exercise.name} 
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </div>
+                                  {isRestPeriod(item) ? (
+                                    <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                                      <Timer className="h-6 w-6 text-primary/70" />
+                                    </div>
+                                  ) : (
+                                    <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                      <img 
+                                        src={(item as WorkoutExercise).exercise.gifUrl} 
+                                        alt={(item as WorkoutExercise).exercise.name} 
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </div>
+                                  )}
                                   <div>
-                                    <h4 className="font-medium text-sm capitalize line-clamp-1">{item.exercise.name}</h4>
+                                    <h4 className="font-medium text-sm capitalize line-clamp-1">
+                                      {isRestPeriod(item) ? "Rest Period" : (item as WorkoutExercise).exercise.name}
+                                    </h4>
                                     <div className="flex items-center gap-1 mt-1">
                                       <Clock className="h-3 w-3 text-muted-foreground" />
                                       <span className="text-xs text-muted-foreground">{formatTime(item.duration)}</span>
@@ -444,7 +548,7 @@ const WorkoutBuilder = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                                  onClick={() => removeExerciseFromWorkout(index)}
+                                  onClick={() => removeWorkoutItem(index)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -457,10 +561,10 @@ const WorkoutBuilder = () => {
                                 </div>
                                 <Slider
                                   defaultValue={[item.duration]}
-                                  min={10}
+                                  min={5}
                                   max={300}
                                   step={5}
-                                  onValueChange={(value) => updateExerciseDuration(index, value[0])}
+                                  onValueChange={(value) => updateItemDuration(index, value[0])}
                                 />
                               </div>
                             </CardContent>
@@ -474,7 +578,7 @@ const WorkoutBuilder = () => {
                     <Button 
                       className="w-full" 
                       size="lg"
-                      disabled={workoutExercises.length === 0}
+                      disabled={workoutItems.length === 0}
                       onClick={startWorkout}
                     >
                       <Play className="h-4 w-4 mr-2" />
