@@ -95,3 +95,21 @@ export const fetchExercisesByIds = async (ids: string[]): Promise<Exercise[]> =>
     return [];
   }
 };
+
+// Fetch exercises by muscle target
+export const fetchExercisesByMuscle = async (muscle: string): Promise<Exercise[]> => {
+  try {
+    // This would be a real API call in a production app
+    // For now, we'll filter from mock data based on target muscle
+    const allExercises = await fetchExercises(1, 100);
+    // Filter exercises where the target or secondary muscles match the requested muscle
+    return allExercises.filter(exercise => 
+      exercise.target.toLowerCase() === muscle.toLowerCase() || 
+      exercise.secondaryMuscles?.some(m => m.toLowerCase() === muscle.toLowerCase())
+    );
+  } catch (error) {
+    console.error(`Error fetching exercises for muscle ${muscle}:`, error);
+    toast.error(`Failed to load exercises for ${muscle}`);
+    return [];
+  }
+};
