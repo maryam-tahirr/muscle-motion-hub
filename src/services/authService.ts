@@ -99,7 +99,7 @@ const authService = {
   // Check if user is admin
   isAdmin: (): boolean => {
     const user = authService.getCurrentUser();
-    return user ? user.isAdmin : false;
+    return Boolean(user && user.isAdmin);
   },
   
   // Handle authentication callback (for OAuth)

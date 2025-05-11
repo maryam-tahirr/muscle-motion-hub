@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -40,18 +40,22 @@ const AdminPanel = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const navigate = useNavigate();
   
-  // Check if the current user is an admin
-  if (!authService.isAuthenticated()) {
-    return <Navigate to="/signin" />;
-  }
-  
-  if (!authService.isAdmin()) {
-    return <Navigate to="/" />;
-  }
-  
   useEffect(() => {
+    // Check authentication and admin status here instead of at component level
+    if (!authService.isAuthenticated()) {
+      toast.error("You must be signed in to view this page");
+      navigate('/signin');
+      return;
+    }
+    
+    if (!authService.isAdmin()) {
+      toast.error("You don't have permission to access the admin panel");
+      navigate('/');
+      return;
+    }
+    
     fetchUsers();
-  }, []);
+  }, [navigate]);
   
   const fetchUsers = async () => {
     try {

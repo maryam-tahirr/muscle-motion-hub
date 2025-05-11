@@ -31,18 +31,23 @@ const ProtectedRoute = ({ children }) => {
 
 // Admin route component
 const AdminRoute = ({ children }) => {
-  const isAuthenticated = authService.isAuthenticated();
-  const isAdmin = authService.isAdmin();
-  
-  if (!isAuthenticated) {
+  try {
+    const isAuthenticated = authService.isAuthenticated();
+    const isAdmin = authService.isAdmin();
+    
+    if (!isAuthenticated) {
+      return <Navigate to="/signin" />;
+    }
+    
+    if (!isAdmin) {
+      return <Navigate to="/" />;
+    }
+    
+    return children;
+  } catch (error) {
+    console.error("Error in AdminRoute:", error);
     return <Navigate to="/signin" />;
   }
-  
-  if (!isAdmin) {
-    return <Navigate to="/" />;
-  }
-  
-  return children;
 };
 
 const App = () => (
