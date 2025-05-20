@@ -14,11 +14,30 @@ export interface Exercise {
   instructions?: string[];
 }
 
+// Base API URL and options
+const API_BASE_URL = 'https://exercisedb.p.rapidapi.com';
+const API_OPTIONS = {
+  headers: {
+    'X-RapidAPI-Key': '75dc092df9msh20bd8756e7cfd9dp1fe7dcjsn786729797fb6',
+    'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com'
+  }
+};
+
 // Fetch all exercises (paginated)
 export const fetchExercises = async (page = 1, limit = 10): Promise<Exercise[]> => {
   try {
-    // This would be a real API call in a production app
-    // For now, returning mock data
+    const response = await axios.get(`${API_BASE_URL}/exercises`, API_OPTIONS);
+    const data = response.data || [];
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    return data.slice(startIndex, endIndex);
+  } catch (error) {
+    console.error('Error fetching exercises:', error);
+    toast.error('Failed to load exercises');
+    
+    // Return default exercises on error for better user experience
     return [
       {
         id: "0001",
@@ -48,33 +67,30 @@ export const fetchExercises = async (page = 1, limit = 10): Promise<Exercise[]> 
           "Pull your body up until your chin is over the bar.",
           "Lower yourself back to the starting position."
         ]
-      },
-      // Add more exercises as needed
+      }
     ];
-  } catch (error) {
-    console.error('Error fetching exercises:', error);
-    toast.error('Failed to load exercises');
-    return [];
   }
 };
 
 // Fetch all body parts
 export const fetchAllBodyParts = async (): Promise<string[]> => {
   try {
-    // This would be a real API call in a production app
-    return ["back", "cardio", "chest", "lower arms", "lower legs", "neck", "shoulders", "upper arms", "upper legs", "waist"];
+    const response = await axios.get(`${API_BASE_URL}/bodyPartList`, API_OPTIONS);
+    return response.data || [];
   } catch (error) {
     console.error('Error fetching body parts:', error);
     toast.error('Failed to load body parts');
-    return [];
+    return ["back", "cardio", "chest", "lower arms", "lower legs", "neck", "shoulders", "upper arms", "upper legs", "waist"];
   }
 };
 
 // Fetch exercises by body part
 export const fetchExercisesByBodyPart = async (bodyPart: string): Promise<Exercise[]> => {
   try {
-    // This would be a real API call in a production app
-    return await fetchExercises(); // For demo, just return all exercises
+    if (!bodyPart) return await fetchExercises();
+    
+    const response = await axios.get(`${API_BASE_URL}/exercises/bodyPart/${bodyPart}`, API_OPTIONS);
+    return response.data || [];
   } catch (error) {
     console.error(`Error fetching exercises for ${bodyPart}:`, error);
     toast.error(`Failed to load exercises for ${bodyPart}`);
@@ -85,9 +101,10 @@ export const fetchExercisesByBodyPart = async (bodyPart: string): Promise<Exerci
 // Fetch exercises by their IDs
 export const fetchExercisesByIds = async (ids: string[]): Promise<Exercise[]> => {
   try {
-    // This would be a real API call in a production app
-    // For now, we'll filter from mock data
-    const allExercises = await fetchExercises(1, 100);
+    if (!ids.length) return [];
+    
+    // This API doesn't have a direct endpoint for fetching by IDs, so we'll fetch all and filter
+    const allExercises = await fetchExercises(1, 300);
     return allExercises.filter(exercise => ids.includes(exercise.id));
   } catch (error) {
     console.error('Error fetching exercises by IDs:', error);
@@ -99,14 +116,10 @@ export const fetchExercisesByIds = async (ids: string[]): Promise<Exercise[]> =>
 // Fetch exercises by muscle target
 export const fetchExercisesByMuscle = async (muscle: string): Promise<Exercise[]> => {
   try {
-    // This would be a real API call in a production app
-    // For now, we'll filter from mock data based on target muscle
-    const allExercises = await fetchExercises(1, 100);
-    // Filter exercises where the target or secondary muscles match the requested muscle
-    return allExercises.filter(exercise => 
-      exercise.target.toLowerCase() === muscle.toLowerCase() || 
-      exercise.secondaryMuscles?.some(m => m.toLowerCase() === muscle.toLowerCase())
-    );
+    if (!muscle) return [];
+    
+    const response = await axios.get(`${API_BASE_URL}/exercises/target/${muscle}`, API_OPTIONS);
+    return response.data || [];
   } catch (error) {
     console.error(`Error fetching exercises for muscle ${muscle}:`, error);
     toast.error(`Failed to load exercises for ${muscle}`);

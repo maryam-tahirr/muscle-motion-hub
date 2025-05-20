@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,13 +52,20 @@ const ExerciseList: React.FC<ExerciseListProps> = ({
   useEffect(() => {
     const savedIdsStr = localStorage.getItem('savedExercises');
     if (savedIdsStr) {
-      setSavedExercises(JSON.parse(savedIdsStr));
+      try {
+        const saved = JSON.parse(savedIdsStr);
+        setSavedExercises(Array.isArray(saved) ? saved : []);
+      } catch (err) {
+        console.error('Error parsing saved exercises:', err);
+        setSavedExercises([]);
+        localStorage.setItem('savedExercises', JSON.stringify([]));
+      }
     }
   }, []);
   
   // Filter exercises based on difficulty and equipment
   const filteredExercises = exercises.filter(exercise => {
-    // Simple filtering logic based on equipment names (would need to be adjusted based on actual API response)
+    // Simple filtering logic based on equipment names
     if (equipment !== 'all') {
       if (!exercise.equipment.toLowerCase().includes(equipment)) {
         return false;
@@ -83,7 +89,14 @@ const ExerciseList: React.FC<ExerciseListProps> = ({
     e.stopPropagation();
     
     const savedIdsStr = localStorage.getItem('savedExercises');
-    let savedIds: string[] = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+    let savedIds: string[] = [];
+    
+    try {
+      savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+      if (!Array.isArray(savedIds)) savedIds = [];
+    } catch (err) {
+      console.error('Error parsing saved exercises:', err);
+    }
     
     if (savedIds.includes(exerciseId)) {
       savedIds = savedIds.filter(id => id !== exerciseId);
