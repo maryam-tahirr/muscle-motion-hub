@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Exercise } from '@/services/exerciseService';
 import { Button } from '@/components/ui/button';
 import { Heart, Share2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
+import { saveExercise, removeSavedExercise } from '@/services/savedExerciseService';
+import authService from '@/services/authService';
 
 interface ExerciseDetailProps {
   exercise: Exercise;
@@ -12,45 +15,90 @@ interface ExerciseDetailProps {
 
 const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise }) => {
   const [isSaved, setIsSaved] = useState(false);
+  const queryClient = useQueryClient();
+  const isAuthenticated = authService.isAuthenticated();
+
+  // Save exercise mutation
+  const { mutate: saveExerciseMutation } = useMutation({
+    mutationFn: () => saveExercise({
+      exerciseId: exercise.id,
+      name: exercise.name,
+      gifUrl: exercise.gifUrl,
+      target: exercise.target,
+      equipment: exercise.equipment
+    }),
+    onSuccess: () => {
+      setIsSaved(true);
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
+    }
+  });
+
+  // Remove exercise mutation
+  const { mutate: removeExerciseMutation } = useMutation({
+    mutationFn: () => removeSavedExercise(exercise.id),
+    onSuccess: () => {
+      setIsSaved(false);
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
+    }
+  });
 
   // Check if exercise is saved
   useEffect(() => {
     try {
-      const savedIdsStr = localStorage.getItem('savedExercises');
-      const savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
-      setIsSaved(Array.isArray(savedIds) && savedIds.includes(exercise.id));
+      // If using backend authentication, we'll rely on that
+      if (isAuthenticated) {
+        // We'll set this based on the saved exercises returned from the backend
+        // This will be handled in the parent component or via a query
+        const savedIdsStr = localStorage.getItem('savedExercises');
+        const savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+        setIsSaved(Array.isArray(savedIds) && savedIds.includes(exercise.id));
+      } else {
+        // Fallback to local storage when not authenticated
+        const savedIdsStr = localStorage.getItem('savedExercises');
+        const savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+        setIsSaved(Array.isArray(savedIds) && savedIds.includes(exercise.id));
+      }
     } catch (err) {
       console.error('Error checking saved status:', err);
       setIsSaved(false);
     }
-  }, [exercise.id]);
+  }, [exercise.id, isAuthenticated]);
 
   const toggleSave = () => {
-    try {
-      const savedIdsStr = localStorage.getItem('savedExercises');
-      let savedIds: string[] = [];
-      
-      try {
-        savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
-        if (!Array.isArray(savedIds)) savedIds = [];
-      } catch (err) {
-        console.error('Error parsing saved exercises:', err);
-      }
-      
-      if (savedIds.includes(exercise.id)) {
-        savedIds = savedIds.filter(id => id !== exercise.id);
-        toast.success('Exercise removed from favorites');
-        setIsSaved(false);
+    if (isAuthenticated) {
+      if (isSaved) {
+        removeExerciseMutation();
       } else {
-        savedIds.push(exercise.id);
-        toast.success('Exercise saved to favorites');
-        setIsSaved(true);
+        saveExerciseMutation();
       }
-      
-      localStorage.setItem('savedExercises', JSON.stringify(savedIds));
-    } catch (err) {
-      console.error('Error toggling save status:', err);
-      toast.error('Failed to update favorites');
+    } else {
+      // Fallback to local storage if not authenticated
+      try {
+        const savedIdsStr = localStorage.getItem('savedExercises');
+        let savedIds: string[] = [];
+        
+        try {
+          savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+          if (!Array.isArray(savedIds)) savedIds = [];
+        } catch (err) {
+          console.error('Error parsing saved exercises:', err);
+        }
+        
+        if (savedIds.includes(exercise.id)) {
+          savedIds = savedIds.filter(id => id !== exercise.id);
+          toast.success('Exercise removed from favorites');
+          setIsSaved(false);
+        } else {
+          savedIds.push(exercise.id);
+          toast.success('Exercise saved to favorites');
+          setIsSaved(true);
+        }
+        
+        localStorage.setItem('savedExercises', JSON.stringify(savedIds));
+      } catch (err) {
+        console.error('Error toggling save status:', err);
+        toast.error('Failed to update favorites');
+      }
     }
   };
 

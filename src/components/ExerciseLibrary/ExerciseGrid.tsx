@@ -3,7 +3,10 @@ import React from 'react';
 import { Exercise } from '@/services/exerciseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { saveExercise, removeSavedExercise } from '@/services/savedExerciseService';
 import ExerciseCard from './ExerciseCard';
+import authService from '@/services/authService';
 
 interface ExerciseGridProps {
   exercises: Exercise[];
@@ -24,6 +27,45 @@ const ExerciseGrid = ({
   onSelectExercise,
   onToggleSave,
 }: ExerciseGridProps) => {
+  const queryClient = useQueryClient();
+  const isAuthenticated = authService.isAuthenticated();
+
+  // Save exercise mutation
+  const { mutate: saveExerciseMutation } = useMutation({
+    mutationFn: (exercise: Exercise) => saveExercise({
+      exerciseId: exercise.id,
+      name: exercise.name,
+      gifUrl: exercise.gifUrl,
+      target: exercise.target,
+      equipment: exercise.equipment
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
+    }
+  });
+
+  // Remove exercise mutation
+  const { mutate: removeExerciseMutation } = useMutation({
+    mutationFn: (exerciseId: string) => removeSavedExercise(exerciseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
+    }
+  });
+
+  const handleToggleSave = (e: React.MouseEvent, exercise: Exercise) => {
+    if (!isAuthenticated) {
+      onToggleSave(e, exercise); // Fall back to local storage method if not authenticated
+      return;
+    }
+    
+    e.stopPropagation();
+    if (savedExercises.includes(exercise.id)) {
+      removeExerciseMutation(exercise.id);
+    } else {
+      saveExerciseMutation(exercise);
+    }
+  };
+
   const filteredExercises = exercises.filter((exercise) => {
     if (!searchTerm) return true;
 
@@ -77,7 +119,7 @@ const ExerciseGrid = ({
           exercise={exercise}
           isSaved={savedExercises.includes(exercise.id)}
           onSelect={onSelectExercise}
-          onToggleSave={onToggleSave}
+          onToggleSave={handleToggleSave}
         />
       ))}
     </div>

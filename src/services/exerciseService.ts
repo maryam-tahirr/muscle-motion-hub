@@ -2,127 +2,159 @@
 import axios from 'axios';
 import { toast } from '@/components/ui/sonner';
 
-// Define the Exercise interface
+// Types
 export interface Exercise {
   id: string;
   name: string;
-  bodyPart: string;
-  target: string;
-  equipment: string;
   gifUrl: string;
+  target: string;
+  bodyPart: string;
+  equipment: string;
   secondaryMuscles?: string[];
   instructions?: string[];
 }
 
-// Base API URL and options
-const API_BASE_URL = 'https://exercisedb.p.rapidapi.com';
-const API_OPTIONS = {
-  headers: {
-    'X-RapidAPI-Key': '75dc092df9msh20bd8756e7cfd9dp1fe7dcjsn786729797fb6',
-    'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com'
-  }
-};
-
-// Fetch all exercises (paginated)
-export const fetchExercises = async (page = 1, limit = 10): Promise<Exercise[]> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/exercises`, API_OPTIONS);
-    const data = response.data || [];
-    
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    return data.slice(startIndex, endIndex);
-  } catch (error) {
-    console.error('Error fetching exercises:', error);
-    toast.error('Failed to load exercises');
-    
-    // Return default exercises on error for better user experience
-    return [
-      {
-        id: "0001",
-        name: "barbell bench press",
-        bodyPart: "chest",
-        equipment: "barbell",
-        gifUrl: "https://v2.exercisedb.io/image/QU4rCpbb5pPmQS",
-        target: "pectorals",
-        secondaryMuscles: ["triceps", "shoulders"],
-        instructions: [
-          "Lie on a flat bench with your feet flat on the floor.",
-          "Grip the barbell slightly wider than shoulder-width.",
-          "Lower the barbell to your mid-chest.",
-          "Press the barbell back to the starting position."
-        ]
-      },
-      {
-        id: "0002",
-        name: "pull-up",
-        bodyPart: "back",
-        equipment: "body weight",
-        gifUrl: "https://v2.exercisedb.io/image/91C0f77aR63E9B",
-        target: "lats",
-        secondaryMuscles: ["biceps", "forearms"],
-        instructions: [
-          "Hang from a pull-up bar with palms facing away from you.",
-          "Pull your body up until your chin is over the bar.",
-          "Lower yourself back to the starting position."
-        ]
-      }
-    ];
-  }
-};
-
 // Fetch all body parts
 export const fetchAllBodyParts = async (): Promise<string[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/bodyPartList`, API_OPTIONS);
-    return response.data || [];
+    const response = await axios.get('https://exercisedb.p.rapidapi.com/exercises/bodyPartList', {
+      headers: {
+        'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY || 'your-rapid-api-key',
+        'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com'
+      }
+    });
+    return response.data;
   } catch (error) {
     console.error('Error fetching body parts:', error);
-    toast.error('Failed to load body parts');
-    return ["back", "cardio", "chest", "lower arms", "lower legs", "neck", "shoulders", "upper arms", "upper legs", "waist"];
+    return ['back', 'cardio', 'chest', 'lower arms', 'lower legs', 'neck', 'shoulders', 'upper arms', 'upper legs', 'waist'];
   }
 };
 
 // Fetch exercises by body part
 export const fetchExercisesByBodyPart = async (bodyPart: string): Promise<Exercise[]> => {
   try {
-    if (!bodyPart) return await fetchExercises();
-    
-    const response = await axios.get(`${API_BASE_URL}/exercises/bodyPart/${bodyPart}`, API_OPTIONS);
-    return response.data || [];
+    const response = await axios.get(`https://exercisedb.p.rapidapi.com/exercises/bodyPart/${bodyPart}`, {
+      headers: {
+        'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY || 'your-rapid-api-key',
+        'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com'
+      }
+    });
+    return response.data;
   } catch (error) {
-    console.error(`Error fetching exercises for ${bodyPart}:`, error);
-    toast.error(`Failed to load exercises for ${bodyPart}`);
-    return [];
+    console.error(`Error fetching exercises for body part ${bodyPart}:`, error);
+    toast.error('Failed to load exercises. Using sample data instead.');
+    // Return sample data as fallback
+    return getSampleExercises(bodyPart);
   }
 };
 
-// Fetch exercises by their IDs
-export const fetchExercisesByIds = async (ids: string[]): Promise<Exercise[]> => {
+// Fetch exercise by ID
+export const fetchExerciseById = async (id: string): Promise<Exercise | null> => {
   try {
-    if (!ids.length) return [];
+    const response = await axios.get(`https://exercisedb.p.rapidapi.com/exercises/exercise/${id}`, {
+      headers: {
+        'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY || 'your-rapid-api-key',
+        'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching exercise with ID ${id}:`, error);
+    return null;
+  }
+};
+
+// Fetch multiple exercises by IDs
+export const fetchExercisesByIds = async (ids: string[]): Promise<Exercise[]> => {
+  if (!ids.length) return [];
+  
+  try {
+    // Fetch all exercises (inefficient but API doesn't support bulk fetch by IDs)
+    const exercises: Exercise[] = [];
     
-    // This API doesn't have a direct endpoint for fetching by IDs, so we'll fetch all and filter
-    const allExercises = await fetchExercises(1, 300);
-    return allExercises.filter(exercise => ids.includes(exercise.id));
+    for (const id of ids) {
+      const exercise = await fetchExerciseById(id);
+      if (exercise) exercises.push(exercise);
+    }
+    
+    return exercises;
   } catch (error) {
     console.error('Error fetching exercises by IDs:', error);
-    toast.error('Failed to load saved exercises');
     return [];
   }
 };
 
-// Fetch exercises by muscle target
-export const fetchExercisesByMuscle = async (muscle: string): Promise<Exercise[]> => {
-  try {
-    if (!muscle) return [];
-    
-    const response = await axios.get(`${API_BASE_URL}/exercises/target/${muscle}`, API_OPTIONS);
-    return response.data || [];
-  } catch (error) {
-    console.error(`Error fetching exercises for muscle ${muscle}:`, error);
-    toast.error(`Failed to load exercises for ${muscle}`);
-    return [];
-  }
-};
+// Sample exercise data as fallback
+function getSampleExercises(bodyPart: string): Exercise[] {
+  const samples: Record<string, Exercise[]> = {
+    back: [
+      {
+        id: "0007",
+        name: "Bent Over Row",
+        gifUrl: "https://via.placeholder.com/400x300?text=Bent+Over+Row",
+        target: "lats",
+        bodyPart: "back",
+        equipment: "barbell",
+        secondaryMuscles: ["biceps", "rhomboids"],
+        instructions: ["Stand with feet shoulder-width apart", "Bend at the waist keeping back straight", "Grab barbell with overhand grip", "Pull barbell to lower chest", "Lower and repeat"]
+      },
+      {
+        id: "0008",
+        name: "Pull-up",
+        gifUrl: "https://via.placeholder.com/400x300?text=Pull+Up",
+        target: "lats",
+        bodyPart: "back",
+        equipment: "body weight",
+        secondaryMuscles: ["biceps", "middle back"],
+        instructions: ["Grab the pull-up bar with hands shoulder-width apart", "Hang with arms fully extended", "Pull yourself up until chin is over the bar", "Lower yourself until arms are fully extended"]
+      }
+    ],
+    chest: [
+      {
+        id: "0001",
+        name: "Bench Press",
+        gifUrl: "https://via.placeholder.com/400x300?text=Bench+Press",
+        target: "pectorals",
+        bodyPart: "chest",
+        equipment: "barbell",
+        secondaryMuscles: ["triceps", "front delts"],
+        instructions: ["Lie on bench with feet on ground", "Grip barbell slightly wider than shoulder width", "Lower bar to mid-chest", "Press bar up to starting position", "Repeat"]
+      },
+      {
+        id: "0002",
+        name: "Push-up",
+        gifUrl: "https://via.placeholder.com/400x300?text=Push+Up",
+        target: "pectorals",
+        bodyPart: "chest",
+        equipment: "body weight",
+        secondaryMuscles: ["triceps", "shoulders"],
+        instructions: ["Place hands slightly wider than shoulders", "Keep body in straight line from head to heels", "Lower chest to ground", "Push back up to starting position"]
+      }
+    ],
+    "upper legs": [
+      {
+        id: "0003",
+        name: "Squat",
+        gifUrl: "https://via.placeholder.com/400x300?text=Squat",
+        target: "quadriceps",
+        bodyPart: "upper legs",
+        equipment: "barbell",
+        secondaryMuscles: ["glutes", "hamstrings"],
+        instructions: ["Stand with feet shoulder-width apart", "Place barbell on upper back", "Bend knees and hips to lower", "Return to standing position"]
+      },
+      {
+        id: "0004",
+        name: "Leg Press",
+        gifUrl: "https://via.placeholder.com/400x300?text=Leg+Press",
+        target: "quadriceps",
+        bodyPart: "upper legs",
+        equipment: "machine",
+        secondaryMuscles: ["glutes", "hamstrings"],
+        instructions: ["Sit on leg press machine", "Place feet on platform hip-width apart", "Release safety and lower platform", "Push through heels to starting position"]
+      }
+    ]
+  };
+  
+  // Return sample data for the requested body part, or a default if not found
+  return samples[bodyPart] || samples.chest;
+}
