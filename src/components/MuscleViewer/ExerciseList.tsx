@@ -1,282 +1,196 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from "@/components/ui/skeleton";
+
+import React from 'react';
+import { 
+  Card, 
+  CardContent 
+} from '@/components/ui/card';
+import { fetchExercisesByBodyPart, Exercise } from '@/services/exerciseService';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { saveExercise, removeSavedExercise } from '@/services/savedExerciseService';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { fetchExercisesByMuscle, Exercise } from '@/services/exerciseService'; 
-import { Heart, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/components/ui/sonner';
+import { Heart } from 'lucide-react';
+import authService from '@/services/authService';
 
 interface ExerciseListProps {
-  muscleGroup: string;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced' | 'all';
-  equipment?: 'bodyweight' | 'dumbbell' | 'barbell' | 'machine' | 'all';
-  showAnimations?: boolean;
+  selectedMuscle: string;
+  onSelectExercise: (exercise: Exercise) => void;
+  savedExercises: string[];
 }
 
-// Map our muscle groups to ExerciseDB target muscles
-const muscleGroupToTargetMap: Record<string, string> = {
-  'chest': 'pectorals',
-  'abs': 'abs',
-  'quads': 'quads',
-  'biceps': 'biceps',
-  'forearms': 'forearms',
-  'calves': 'calves',
-  'shoulders': 'delts',
-  'back': 'lats',
-  'triceps': 'triceps',
-  'glutes': 'glutes',
-  'hamstrings': 'hamstrings'
+// Helper function to map muscle names to body parts
+const mapMuscleToBodyPart = (muscleName: string): string => {
+  const muscleMap: Record<string, string> = {
+    // Upper body
+    'chest': 'chest',
+    'lats': 'back',
+    'trapezius': 'back',
+    'upper_back': 'back',
+    'lower_back': 'back',
+    'biceps': 'upper arms',
+    'triceps': 'upper arms',
+    'forearms': 'lower arms',
+    'deltoids': 'shoulders',
+    'rotator_cuffs': 'shoulders',
+    
+    // Lower body
+    'quadriceps': 'upper legs',
+    'hamstrings': 'upper legs',
+    'glutes': 'upper legs',
+    'adductors': 'upper legs',
+    'calves': 'lower legs',
+    
+    // Core
+    'abs': 'waist',
+    'obliques': 'waist',
+    'neck': 'neck',
+    
+    // Default if not found
+    'default': 'chest',
+  };
+
+  return muscleMap[muscleName] || 'chest';
+};
+
+// Helper function to filter exercises by actual target muscle
+const filterExercisesByMuscle = (exercises: Exercise[], muscleName: string): Exercise[] => {
+  const muscleKey = muscleName.toLowerCase();
+  
+  // Direct match for target muscle
+  const directMatches = exercises.filter(ex => 
+    ex.target.toLowerCase().includes(muscleKey) || 
+    (ex.secondaryMuscles && ex.secondaryMuscles.some(m => m.toLowerCase().includes(muscleKey)))
+  );
+  
+  if (directMatches.length > 0) {
+    return directMatches;
+  }
+  
+  // If no direct matches, return all exercises for that body part
+  return exercises;
 };
 
 const ExerciseList: React.FC<ExerciseListProps> = ({ 
-  muscleGroup, 
-  difficulty = 'all',
-  equipment = 'all',
-  showAnimations = true 
+  selectedMuscle, 
+  onSelectExercise,
+  savedExercises
 }) => {
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [savedExercises, setSavedExercises] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+  const isAuthenticated = authService.isAuthenticated();
+  const bodyPart = mapMuscleToBodyPart(selectedMuscle);
   
-  // Convert our muscle group to the ExerciseDB target
-  const targetMuscle = muscleGroupToTargetMap[muscleGroup] || muscleGroup;
-  
-  // Fetch exercises from API
+  // Fetch exercises for the body part
   const { data: exercises = [], isLoading } = useQuery({
-    queryKey: ['muscleExercises', targetMuscle],
-    queryFn: () => fetchExercisesByMuscle(targetMuscle),
+    queryKey: ['exercises', bodyPart],
+    queryFn: () => fetchExercisesByBodyPart(bodyPart),
   });
-
-  // Load saved exercises from localStorage
-  useEffect(() => {
-    const savedIdsStr = localStorage.getItem('savedExercises');
-    if (savedIdsStr) {
-      try {
-        const saved = JSON.parse(savedIdsStr);
-        setSavedExercises(Array.isArray(saved) ? saved : []);
-      } catch (err) {
-        console.error('Error parsing saved exercises:', err);
-        setSavedExercises([]);
-        localStorage.setItem('savedExercises', JSON.stringify([]));
-      }
-    }
-  }, []);
   
-  // Filter exercises based on difficulty and equipment
-  const filteredExercises = exercises.filter(exercise => {
-    // Simple filtering logic based on equipment names
-    if (equipment !== 'all') {
-      if (!exercise.equipment.toLowerCase().includes(equipment)) {
-        return false;
-      }
+  // Filter exercises by muscle
+  const filteredExercises = filterExercisesByMuscle(exercises, selectedMuscle);
+  
+  // Save exercise mutation
+  const { mutate: saveExerciseMutation } = useMutation({
+    mutationFn: (exercise: Exercise) => saveExercise({
+      exerciseId: exercise.id,
+      name: exercise.name,
+      gifUrl: exercise.gifUrl,
+      target: exercise.target,
+      equipment: exercise.equipment
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
     }
-    
-    // Note: ExerciseDB doesn't have difficulty levels, so this is just a placeholder
-    // In a real app, you'd need to add this data or get it from another source
-    const exerciseDifficulty = 
-      exercise.name.includes('advanced') ? 'advanced' : 
-      exercise.name.includes('beginner') ? 'beginner' : 'intermediate';
-    
-    if (difficulty !== 'all' && exerciseDifficulty !== difficulty) {
-      return false;
-    }
-    
-    return true;
   });
 
-  const toggleSaveExercise = (e: React.MouseEvent, exerciseId: string) => {
+  // Remove exercise mutation
+  const { mutate: removeExerciseMutation } = useMutation({
+    mutationFn: (exerciseId: string) => removeSavedExercise(exerciseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedExercises'] });
+    }
+  });
+
+  const handleToggleSave = (e: React.MouseEvent, exercise: Exercise) => {
     e.stopPropagation();
     
-    const savedIdsStr = localStorage.getItem('savedExercises');
-    let savedIds: string[] = [];
-    
-    try {
-      savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
-      if (!Array.isArray(savedIds)) savedIds = [];
-    } catch (err) {
-      console.error('Error parsing saved exercises:', err);
-    }
-    
-    if (savedIds.includes(exerciseId)) {
-      savedIds = savedIds.filter(id => id !== exerciseId);
-      toast.success('Exercise removed from favorites');
+    if (isAuthenticated) {
+      if (savedExercises.includes(exercise.id)) {
+        removeExerciseMutation(exercise.id);
+      } else {
+        saveExerciseMutation(exercise);
+      }
     } else {
-      savedIds.push(exerciseId);
-      toast.success('Exercise saved to favorites');
-    }
-    
-    localStorage.setItem('savedExercises', JSON.stringify(savedIds));
-    setSavedExercises(savedIds);
-  };
-
-  const isExerciseSaved = (id: string) => {
-    return savedExercises.includes(id);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2].map((i) => (
-          <div key={i} className="flex gap-4">
-            <Skeleton className="h-24 w-24 rounded-md" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (filteredExercises.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p>No exercises found matching your filters.</p>
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          className="mt-2"
-          onClick={() => window.location.href = '/exercise-library'}
-        >
-          Browse all exercises
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="space-y-4 max-h-[400px] overflow-y-auto hide-scrollbar pr-2">
-        {filteredExercises.slice(0, 6).map((exercise) => (
-          <div 
-            key={exercise.id} 
-            className="flex gap-4 p-3 bg-card rounded-lg border border-border/50 hover:border-primary/30 transition-all cursor-pointer"
-            onClick={() => setSelectedExercise(exercise)}
-          >
-            <div className="h-24 w-24 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-              {showAnimations ? (
-                <img 
-                  src={exercise.gifUrl} 
-                  alt={exercise.name} 
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-muted flex items-center justify-center">
-                  <span className="text-4xl">{exercise.name.charAt(0).toUpperCase()}</span>
-                </div>
-              )}
-            </div>
-            <div className="space-y-1 flex-1">
-              <div className="flex justify-between">
-                <h4 className="font-medium capitalize">{exercise.name}</h4>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={`h-6 w-6 ${isExerciseSaved(exercise.id) ? 'text-red-500' : ''}`}
-                  onClick={(e) => toggleSaveExercise(e, exercise.id)}
-                >
-                  <Heart className="h-4 w-4" fill={isExerciseSaved(exercise.id) ? "currentColor" : "none"} />
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground line-clamp-2 capitalize">
-                Target: {exercise.target}
-              </p>
-              <div className="flex gap-2 items-center text-xs">
-                <Badge variant="secondary" className="capitalize">{exercise.equipment}</Badge>
-              </div>
-            </div>
-          </div>
-        ))}
+      // Fallback to local storage if not authenticated
+      try {
+        const savedIdsStr = localStorage.getItem('savedExercises');
+        let savedIds: string[] = [];
         
-        {filteredExercises.length > 6 && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full"
-            onClick={() => window.location.href = '/exercise-library'}
-          >
-            View all {filteredExercises.length} exercises
-          </Button>
-        )}
-      </div>
-      
-      <Dialog open={!!selectedExercise} onOpenChange={() => setSelectedExercise(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="capitalize">{selectedExercise?.name}</DialogTitle>
-            <DialogDescription className="capitalize">
-              Target Muscle: {selectedExercise?.target}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="md:w-1/2">
-              <div className="bg-muted rounded-md h-64 flex items-center justify-center overflow-hidden">
-                {selectedExercise && (
-                  <img 
-                    src={selectedExercise.gifUrl} 
-                    alt={selectedExercise.name} 
-                    className="h-full object-contain"
-                  />
-                )}
-              </div>
-              
-              <div className="mt-4 space-y-2">
-                <div>
-                  <h4 className="font-medium">Equipment</h4>
-                  <p className="text-muted-foreground capitalize">{selectedExercise?.equipment}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium">Secondary Muscles</h4>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {selectedExercise?.secondaryMuscles?.map((muscle, i) => (
-                      <Badge key={i} variant="outline" className="capitalize">{muscle}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="md:w-1/2">
-              <h4 className="font-medium mb-2">Instructions</h4>
-              {selectedExercise?.instructions?.length ? (
-                <ol className="list-decimal list-inside space-y-2">
-                  {selectedExercise.instructions.map((step, i) => (
-                    <li key={i} className="text-sm">{step}</li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="text-muted-foreground">No detailed instructions available.</p>
-              )}
-            </div>
+        try {
+          savedIds = savedIdsStr ? JSON.parse(savedIdsStr) : [];
+          if (!Array.isArray(savedIds)) savedIds = [];
+        } catch (err) {
+          console.error('Error parsing saved exercises:', err);
+        }
+        
+        if (savedIds.includes(exercise.id)) {
+          const newSavedIds = savedIds.filter(id => id !== exercise.id);
+          localStorage.setItem('savedExercises', JSON.stringify(newSavedIds));
+          queryClient.invalidateQueries({ queryKey: ['savedExercisesLocal'] });
+        } else {
+          savedIds.push(exercise.id);
+          localStorage.setItem('savedExercises', JSON.stringify(savedIds));
+          queryClient.invalidateQueries({ queryKey: ['savedExercisesLocal'] });
+        }
+      } catch (err) {
+        console.error('Error saving exercise locally:', err);
+      }
+    }
+  };
+  
+  if (isLoading) {
+    return <div>Loading exercises...</div>;
+  }
+  
+  if (filteredExercises.length === 0) {
+    return <div>No exercises found for this muscle group.</div>;
+  }
+  
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {filteredExercises.map((exercise) => (
+        <Card 
+          key={exercise.id}
+          className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onSelectExercise(exercise)}
+        >
+          <div className="h-40 bg-muted flex items-center justify-center overflow-hidden">
+            <img 
+              src={exercise.gifUrl} 
+              alt={exercise.name} 
+              className="h-full object-cover"
+            />
           </div>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            {selectedExercise && (
+          <CardContent className="p-4">
+            <div className="flex justify-between">
+              <div>
+                <h3 className="font-medium capitalize">{exercise.name}</h3>
+                <p className="text-sm text-muted-foreground capitalize">{exercise.target}</p>
+              </div>
               <Button 
                 variant="ghost" 
-                size="icon"
-                className={isExerciseSaved(selectedExercise.id) ? 'text-red-500' : ''}
-                onClick={(e) => toggleSaveExercise(e, selectedExercise.id)}
+                size="icon" 
+                className={savedExercises.includes(exercise.id) ? 'text-red-500' : ''}
+                onClick={(e) => handleToggleSave(e, exercise)}
               >
                 <Heart 
-                  className="h-5 w-5" 
-                  fill={isExerciseSaved(selectedExercise.id) ? "currentColor" : "none"} 
+                  className="h-4 w-4" 
+                  fill={savedExercises.includes(exercise.id) ? "currentColor" : "none"} 
                 />
               </Button>
-            )}
-            <Button onClick={() => setSelectedExercise(null)}>
-              <X className="h-4 w-4 mr-2" />
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

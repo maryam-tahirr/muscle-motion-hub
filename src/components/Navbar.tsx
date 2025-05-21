@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { useTheme } from "@/components/ui/theme-provider"
+import { useTheme } from "@/components/ThemeProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button';
 import {
@@ -18,15 +18,11 @@ import authService from '@/services/authService';
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isAuthenticated = authService.isAuthenticated();
   const isAdmin = authService.isAdmin();
   const user = authService.getCurrentUser();
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
