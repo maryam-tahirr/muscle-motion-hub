@@ -38,6 +38,26 @@ export interface WorkoutLog {
   completed_at: string;
 }
 
+// Helper function to safely convert Json to WorkoutExercise[]
+function parseExercises(exercisesJson: any): WorkoutExercise[] {
+  if (!exercisesJson || !Array.isArray(exercisesJson)) {
+    return [];
+  }
+  
+  return exercisesJson.map((exercise: any) => ({
+    id: exercise.id || '',
+    name: exercise.name || '',
+    sets: Number(exercise.sets) || 0,
+    reps: Number(exercise.reps) || 0,
+    weight: exercise.weight ? Number(exercise.weight) : undefined,
+    duration: exercise.duration ? Number(exercise.duration) : undefined,
+    rest: exercise.rest ? Number(exercise.rest) : undefined,
+    gifUrl: exercise.gifUrl || exercise.gif_url,
+    target: exercise.target,
+    equipment: exercise.equipment,
+  }));
+}
+
 class SupabaseWorkoutService {
   // Get all workouts for the current user
   async getWorkouts(): Promise<Workout[]> {
@@ -51,7 +71,7 @@ class SupabaseWorkoutService {
       
       return (data || []).map(workout => ({
         ...workout,
-        exercises: Array.isArray(workout.exercises) ? workout.exercises as WorkoutExercise[] : []
+        exercises: parseExercises(workout.exercises)
       }));
     } catch (error: any) {
       console.error('Error fetching workouts:', error);
@@ -73,7 +93,7 @@ class SupabaseWorkoutService {
       
       return {
         ...data,
-        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+        exercises: parseExercises(data.exercises)
       };
     } catch (error: any) {
       console.error('Error fetching workout:', error);
@@ -94,7 +114,7 @@ class SupabaseWorkoutService {
           user_id: user.id,
           name: workout.name,
           description: workout.description,
-          exercises: workout.exercises as any,
+          exercises: workout.exercises,
           duration: workout.duration,
         })
         .select()
@@ -105,7 +125,7 @@ class SupabaseWorkoutService {
       toast.success('Workout created successfully');
       return {
         ...data,
-        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+        exercises: parseExercises(data.exercises)
       };
     } catch (error: any) {
       console.error('Error creating workout:', error);
@@ -117,14 +137,9 @@ class SupabaseWorkoutService {
   // Update an existing workout
   async updateWorkout(id: string, updates: Partial<Omit<Workout, 'id' | 'user_id' | 'created_at'>>): Promise<Workout | null> {
     try {
-      const updateData: any = { ...updates };
-      if (updates.exercises) {
-        updateData.exercises = updates.exercises as any;
-      }
-
       const { data, error } = await supabase
         .from('workouts')
-        .update(updateData)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -134,7 +149,7 @@ class SupabaseWorkoutService {
       toast.success('Workout updated successfully');
       return {
         ...data,
-        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+        exercises: parseExercises(data.exercises)
       };
     } catch (error: any) {
       console.error('Error updating workout:', error);
