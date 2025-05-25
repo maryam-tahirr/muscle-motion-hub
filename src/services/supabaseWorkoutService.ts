@@ -58,6 +58,22 @@ function parseExercises(exercisesJson: any): WorkoutExercise[] {
   }));
 }
 
+// Helper function to convert WorkoutExercise[] to JSON format for Supabase
+function serializeExercises(exercises: WorkoutExercise[]): any[] {
+  return exercises.map(exercise => ({
+    id: exercise.id,
+    name: exercise.name,
+    sets: exercise.sets,
+    reps: exercise.reps,
+    weight: exercise.weight,
+    duration: exercise.duration,
+    rest: exercise.rest,
+    gifUrl: exercise.gifUrl,
+    target: exercise.target,
+    equipment: exercise.equipment,
+  }));
+}
+
 class SupabaseWorkoutService {
   // Get all workouts for the current user
   async getWorkouts(): Promise<Workout[]> {
@@ -80,7 +96,7 @@ class SupabaseWorkoutService {
     }
   }
 
-  // Get a specific workout by ID
+  // Get a single workout by ID
   async getWorkout(id: string): Promise<Workout | null> {
     try {
       const { data, error } = await supabase
@@ -114,7 +130,7 @@ class SupabaseWorkoutService {
           user_id: user.id,
           name: workout.name,
           description: workout.description,
-          exercises: workout.exercises,
+          exercises: serializeExercises(workout.exercises),
           duration: workout.duration,
         })
         .select()
@@ -137,9 +153,16 @@ class SupabaseWorkoutService {
   // Update an existing workout
   async updateWorkout(id: string, updates: Partial<Omit<Workout, 'id' | 'user_id' | 'created_at'>>): Promise<Workout | null> {
     try {
+      const updateData: any = { ...updates };
+      
+      // Convert exercises to JSON format if provided
+      if (updates.exercises) {
+        updateData.exercises = serializeExercises(updates.exercises);
+      }
+
       const { data, error } = await supabase
         .from('workouts')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -153,7 +176,7 @@ class SupabaseWorkoutService {
       };
     } catch (error: any) {
       console.error('Error updating workout:', error);
-      toast.error(error.message || 'Failed to update workout');
+      toast.error('Failed to update workout');
       return null;
     }
   }
@@ -198,7 +221,7 @@ class SupabaseWorkoutService {
       return data;
     } catch (error: any) {
       console.error('Error logging workout:', error);
-      toast.error(error.message || 'Failed to log workout');
+      toast.error('Failed to log workout');
       return null;
     }
   }
