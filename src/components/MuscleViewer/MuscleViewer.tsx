@@ -10,6 +10,9 @@ import MaleMuscleMap from './MaleMuscleMap';
 import FemaleMuscleMap from './FemaleMuscleMap';
 import ExerciseList from './ExerciseList';
 import { Dumbbell } from 'lucide-react';
+import { Exercise } from '@/services/exerciseService';
+import { useQuery } from '@tanstack/react-query';
+import authService from '@/services/authService';
 
 type MuscleGroup = 
   | 'chest' 
@@ -34,9 +37,47 @@ const MuscleViewer = () => {
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('all');
   const [equipment, setEquipment] = useState<EquipmentType>('all');
   const [showAnimations, setShowAnimations] = useState<boolean>(true);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [savedExercises, setSavedExercises] = useState<string[]>([]);
+  
+  const isAuthenticated = authService.isAuthenticated();
+  
+  // Load saved exercises from localStorage for non-authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const savedIds = localStorage.getItem('savedExercises');
+      if (savedIds) {
+        try {
+          const parsedIds = JSON.parse(savedIds);
+          if (Array.isArray(parsedIds)) {
+            setSavedExercises(parsedIds);
+          }
+        } catch (err) {
+          console.error('Error parsing saved exercises:', err);
+        }
+      }
+    }
+  }, [isAuthenticated]);
+
+  // Fetch saved exercises for authenticated users
+  const { data: userSavedExercises = [] } = useQuery({
+    queryKey: ['savedExercises'],
+    queryFn: async () => {
+      // This will be implemented when we set up the Supabase tables
+      return [];
+    },
+    enabled: isAuthenticated,
+  });
+
+  // Use appropriate saved exercises based on auth status
+  const currentSavedExercises = isAuthenticated ? userSavedExercises : savedExercises;
   
   const handleMuscleSelect = (muscle: MuscleGroup) => {
     setSelectedMuscle(muscle);
+  };
+
+  const handleSelectExercise = (exercise: Exercise) => {
+    setSelectedExercise(exercise);
   };
 
   return (
@@ -132,10 +173,9 @@ const MuscleViewer = () => {
                 
                 {selectedMuscle ? (
                   <ExerciseList 
-                    muscleGroup={selectedMuscle} 
-                    difficulty={difficulty}
-                    equipment={equipment} 
-                    showAnimations={showAnimations}
+                    selectedMuscle={selectedMuscle} 
+                    onSelectExercise={handleSelectExercise}
+                    savedExercises={currentSavedExercises}
                   />
                 ) : (
                   <div className="text-muted-foreground text-center py-12">
