@@ -7,10 +7,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
 import { User, Loader2 } from "lucide-react";
-import authService from "@/services/authService";
+import { useAuth } from "@/hooks/useAuth";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -24,6 +23,7 @@ const formSchema = z.object({
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { signUp, signInWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,19 +39,21 @@ const SignUp = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
-      await authService.register(values.name, values.email, values.password);
-      toast.success("Account created successfully!");
+      await signUp(values.email, values.password, values.name);
       navigate('/');
     } catch (error) {
-      console.error(error);
-      // Error toast is shown in authService
+      console.error('Signup error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/google';
+  const handleGoogleSignUp = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Google signup error:', error);
+    }
   };
 
   return (
@@ -88,7 +90,7 @@ const SignUp = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
+                      <Input placeholder="you@example.com" type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -152,7 +154,7 @@ const SignUp = () => {
             type="button" 
             variant="outline" 
             className="w-full" 
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignUp}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path

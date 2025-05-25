@@ -9,7 +9,146 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      saved_exercises: {
+        Row: {
+          body_part: string | null
+          equipment: string | null
+          exercise_id: string
+          gif_url: string | null
+          id: string
+          name: string
+          saved_at: string | null
+          target: string | null
+          user_id: string
+        }
+        Insert: {
+          body_part?: string | null
+          equipment?: string | null
+          exercise_id: string
+          gif_url?: string | null
+          id?: string
+          name: string
+          saved_at?: string | null
+          target?: string | null
+          user_id: string
+        }
+        Update: {
+          body_part?: string | null
+          equipment?: string | null
+          exercise_id?: string
+          gif_url?: string | null
+          id?: string
+          name?: string
+          saved_at?: string | null
+          target?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_logs: {
+        Row: {
+          completed_at: string | null
+          duration: number | null
+          exercises_completed: number | null
+          id: string
+          notes: string | null
+          total_exercises: number | null
+          user_id: string
+          workout_id: string | null
+          workout_name: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration?: number | null
+          exercises_completed?: number | null
+          id?: string
+          notes?: string | null
+          total_exercises?: number | null
+          user_id: string
+          workout_id?: string | null
+          workout_name: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration?: number | null
+          exercises_completed?: number | null
+          id?: string
+          notes?: string | null
+          total_exercises?: number | null
+          user_id?: string
+          workout_id?: string | null
+          workout_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_logs_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration: number | null
+          exercises: Json
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration?: number | null
+          exercises?: Json
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration?: number | null
+          exercises?: Json
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

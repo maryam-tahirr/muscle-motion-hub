@@ -1,40 +1,44 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import authService from '@/services/authService';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 const AuthCallback = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    const processAuth = async () => {
-      const token = searchParams.get('token');
-      
-      if (!token) {
-        setError('Authentication failed: No token received');
-        toast.error('Authentication failed');
-        setTimeout(() => navigate('/signin'), 2000);
-        return;
-      }
-      
+    const handleAuthCallback = async () => {
       try {
-        await authService.handleAuthCallback(token);
-        toast.success('Authentication successful');
-        navigate('/');
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth callback error:', error);
+          setError('Authentication failed');
+          toast.error('Authentication failed');
+          setTimeout(() => navigate('/signin'), 2000);
+          return;
+        }
+
+        if (data.session) {
+          toast.success('Authentication successful');
+          navigate('/');
+        } else {
+          setError('No session found');
+          setTimeout(() => navigate('/signin'), 2000);
+        }
       } catch (err) {
         console.error('Auth callback error:', err);
-        setError('Authentication failed: Could not process token');
+        setError('Authentication failed');
         toast.error('Authentication failed');
         setTimeout(() => navigate('/signin'), 2000);
       }
     };
     
-    processAuth();
-  }, [searchParams, navigate]);
+    handleAuthCallback();
+  }, [navigate]);
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
