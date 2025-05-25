@@ -20,7 +20,14 @@ import AdminPanel from '@/pages/AdminPanel';
 import NotFound from '@/pages/NotFound';
 import AuthCallback from '@/pages/AuthCallback';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (

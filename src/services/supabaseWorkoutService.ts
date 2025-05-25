@@ -3,43 +3,44 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 export interface WorkoutExercise {
-  exerciseId: string;
+  id: string;
   name: string;
   sets: number;
   reps: number;
   weight?: number;
   duration?: number;
+  rest?: number;
   gifUrl?: string;
   target?: string;
   equipment?: string;
 }
 
 export interface Workout {
-  id?: string;
-  user_id?: string;
+  id: string;
+  user_id: string;
   name: string;
   description?: string;
   exercises: WorkoutExercise[];
   duration?: number;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WorkoutLog {
-  id?: string;
-  user_id?: string;
+  id: string;
+  user_id: string;
   workout_id?: string;
   workout_name: string;
   duration?: number;
-  exercises_completed?: number;
-  total_exercises?: number;
+  exercises_completed: number;
+  total_exercises: number;
   notes?: string;
-  completed_at?: string;
+  completed_at: string;
 }
 
 class SupabaseWorkoutService {
   // Get all workouts for the current user
-  async getUserWorkouts(): Promise<Workout[]> {
+  async getWorkouts(): Promise<Workout[]> {
     try {
       const { data, error } = await supabase
         .from('workouts')
@@ -47,7 +48,11 @@ class SupabaseWorkoutService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      return (data || []).map(workout => ({
+        ...workout,
+        exercises: Array.isArray(workout.exercises) ? workout.exercises as WorkoutExercise[] : []
+      }));
     } catch (error: any) {
       console.error('Error fetching workouts:', error);
       toast.error('Failed to fetch workouts');
@@ -55,7 +60,7 @@ class SupabaseWorkoutService {
     }
   }
 
-  // Get a specific workout
+  // Get a specific workout by ID
   async getWorkout(id: string): Promise<Workout | null> {
     try {
       const { data, error } = await supabase
@@ -65,7 +70,11 @@ class SupabaseWorkoutService {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+      };
     } catch (error: any) {
       console.error('Error fetching workout:', error);
       toast.error('Failed to fetch workout');
@@ -74,7 +83,7 @@ class SupabaseWorkoutService {
   }
 
   // Create a new workout
-  async createWorkout(workout: Workout): Promise<Workout | null> {
+  async createWorkout(workout: Omit<Workout, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Workout | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -85,7 +94,7 @@ class SupabaseWorkoutService {
           user_id: user.id,
           name: workout.name,
           description: workout.description,
-          exercises: workout.exercises,
+          exercises: workout.exercises as any,
           duration: workout.duration,
         })
         .select()
@@ -94,7 +103,10 @@ class SupabaseWorkoutService {
       if (error) throw error;
 
       toast.success('Workout created successfully');
-      return data;
+      return {
+        ...data,
+        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+      };
     } catch (error: any) {
       console.error('Error creating workout:', error);
       toast.error(error.message || 'Failed to create workout');
@@ -103,17 +115,16 @@ class SupabaseWorkoutService {
   }
 
   // Update an existing workout
-  async updateWorkout(id: string, workout: Partial<Workout>): Promise<Workout | null> {
+  async updateWorkout(id: string, updates: Partial<Omit<Workout, 'id' | 'user_id' | 'created_at'>>): Promise<Workout | null> {
     try {
+      const updateData: any = { ...updates };
+      if (updates.exercises) {
+        updateData.exercises = updates.exercises as any;
+      }
+
       const { data, error } = await supabase
         .from('workouts')
-        .update({
-          name: workout.name,
-          description: workout.description,
-          exercises: workout.exercises,
-          duration: workout.duration,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -121,7 +132,10 @@ class SupabaseWorkoutService {
       if (error) throw error;
 
       toast.success('Workout updated successfully');
-      return data;
+      return {
+        ...data,
+        exercises: Array.isArray(data.exercises) ? data.exercises as WorkoutExercise[] : []
+      };
     } catch (error: any) {
       console.error('Error updating workout:', error);
       toast.error(error.message || 'Failed to update workout');
@@ -149,7 +163,7 @@ class SupabaseWorkoutService {
   }
 
   // Log a completed workout
-  async logWorkout(log: WorkoutLog): Promise<WorkoutLog | null> {
+  async logWorkout(log: Omit<WorkoutLog, 'id' | 'user_id' | 'completed_at'>): Promise<WorkoutLog | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -158,12 +172,7 @@ class SupabaseWorkoutService {
         .from('workout_logs')
         .insert({
           user_id: user.id,
-          workout_id: log.workout_id,
-          workout_name: log.workout_name,
-          duration: log.duration,
-          exercises_completed: log.exercises_completed,
-          total_exercises: log.total_exercises,
-          notes: log.notes,
+          ...log,
         })
         .select()
         .single();
@@ -174,7 +183,7 @@ class SupabaseWorkoutService {
       return data;
     } catch (error: any) {
       console.error('Error logging workout:', error);
-      toast.error('Failed to log workout');
+      toast.error(error.message || 'Failed to log workout');
       return null;
     }
   }

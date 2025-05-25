@@ -97,9 +97,9 @@ class SupabaseSavedExerciseService {
         .from('saved_exercises')
         .select('id')
         .eq('exercise_id', exerciseId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       return !!data;
     } catch (error) {
       console.error('Error checking if exercise is saved:', error);
