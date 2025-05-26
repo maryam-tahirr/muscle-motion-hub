@@ -38,37 +38,31 @@ export type Database = {
       }
       saved_exercises: {
         Row: {
-          body_part: string | null
+          created_at: string | null
           equipment: string | null
-          exercise_id: string
-          gif_url: string | null
+          exerciseid: string
+          gifUrl: string | null
           id: string
           name: string
-          saved_at: string | null
           target: string | null
-          user_id: string
         }
         Insert: {
-          body_part?: string | null
+          created_at?: string | null
           equipment?: string | null
-          exercise_id: string
-          gif_url?: string | null
+          exerciseid: string
+          gifUrl?: string | null
           id?: string
           name: string
-          saved_at?: string | null
           target?: string | null
-          user_id: string
         }
         Update: {
-          body_part?: string | null
+          created_at?: string | null
           equipment?: string | null
-          exercise_id?: string
-          gif_url?: string | null
+          exerciseid?: string
+          gifUrl?: string | null
           id?: string
           name?: string
-          saved_at?: string | null
           target?: string | null
-          user_id?: string
         }
         Relationships: []
       }
