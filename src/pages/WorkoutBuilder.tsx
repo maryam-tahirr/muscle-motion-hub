@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { fetchAllBodyParts, fetchExercisesByBodyPart, Exercise } from '@/services/exerciseService';
+import { supabaseSavedWorkoutService } from '@/services/supabaseSavedWorkoutService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +12,9 @@ import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Plus, Trash2, Play, Pause, Clock, X, Timer } from 'lucide-react';
+import { Search, Plus, Trash2, Play, Pause, Clock, X, Timer, Save, BookOpen } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 type WorkoutExercise = {
   exercise: Exercise;
@@ -31,6 +33,10 @@ const isRestPeriod = (item: WorkoutItem): item is RestPeriod => {
 };
 
 const WorkoutBuilder = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'name' | 'target' | 'equipment'>('name');
@@ -46,6 +52,8 @@ const WorkoutBuilder = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [saveWorkoutDialog, setSaveWorkoutDialog] = useState(false);
+  const [workoutName, setWorkoutName] = useState('');
   const whistleRef = useRef<HTMLAudioElement | null>(null);
   const countdownBeepRef = useRef<HTMLAudioElement | null>(null);
   
@@ -98,6 +106,18 @@ const WorkoutBuilder = () => {
     
     loadSavedExercises();
   }, [exercises]);
+
+  // Load saved workout from navigation state if available
+  useEffect(() => {
+    if (location.state?.savedWorkoutItems) {
+      setWorkoutItems(location.state.savedWorkoutItems);
+      if (location.state.workoutName) {
+        setWorkoutName(location.state.workoutName);
+      }
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   // Advanced filtering
   const filteredExercises = exercises.filter(exercise => {
@@ -261,10 +281,32 @@ const WorkoutBuilder = () => {
       <main className="flex-1 pt-20 pb-8">
         <div className="container mx-auto max-w-7xl px-4">
           <div className="py-6">
-            <h1 className="text-3xl font-bold mb-2">Custom Workout Builder</h1>
-            <p className="text-muted-foreground">
-              Create your own custom workout by adding exercises and rest periods
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Custom Workout Builder</h1>
+                <p className="text-muted-foreground">
+                  Create your own custom workout by adding exercises and rest periods
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/saved-workouts')}
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Saved Workouts
+                </Button>
+                {user && workoutItems.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSaveWorkoutDialog(true)}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Workout
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
           
           {isCountingDown ? (
@@ -660,6 +702,44 @@ const WorkoutBuilder = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Save Workout Dialog */}
+      <Dialog open={saveWorkoutDialog} onOpenChange={setSaveWorkoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Workout</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="workoutName">Workout Name</Label>
+              <Input
+                id="workoutName"
+                value={workoutName}
+                onChange={(e) => setWorkoutName(e.target.value)}
+                placeholder="Enter workout name..."
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <p className="text-sm text-muted-foreground">
+                This workout contains {workoutItems.length} items with a total duration of {formatTime(totalWorkoutTime)}.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setSaveWorkoutDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveWorkout}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Workout
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

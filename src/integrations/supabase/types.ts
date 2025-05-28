@@ -16,6 +16,8 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          password_hash: string | null
+          password_raw: string | null
           updated_at: string | null
         }
         Insert: {
@@ -24,6 +26,8 @@ export type Database = {
           email?: string | null
           id: string
           name?: string | null
+          password_hash?: string | null
+          password_raw?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -32,6 +36,8 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          password_hash?: string | null
+          password_raw?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -40,29 +46,56 @@ export type Database = {
         Row: {
           created_at: string | null
           equipment: string | null
-          exerciseid: string
+          exerciseId: string
           gifUrl: string | null
           id: string
           name: string
           target: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           equipment?: string | null
-          exerciseid: string
+          exerciseId: string
           gifUrl?: string | null
           id?: string
           name: string
           target?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           equipment?: string | null
-          exerciseid?: string
+          exerciseId?: string
           gifUrl?: string | null
           id?: string
           name?: string
           target?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      saved_workouts: {
+        Row: {
+          created_at: string | null
+          id: string
+          items: Json
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          items: Json
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          items?: Json
+          name?: string
+          user_id?: string | null
         }
         Relationships: []
       }

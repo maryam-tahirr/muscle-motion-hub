@@ -4,14 +4,13 @@ import { toast } from '@/components/ui/sonner';
 
 export interface SavedExercise {
   id: string;
-  user_id: string;
-  exercise_id: string;
+  user_id?: string;
+  exerciseId: string;
   name: string;
-  gif_url?: string;
+  gifUrl?: string;
   target?: string;
   equipment?: string;
-  body_part?: string;
-  saved_at: string;
+  created_at: string;
 }
 
 class SupabaseSavedExerciseService {
@@ -21,7 +20,7 @@ class SupabaseSavedExerciseService {
       const { data, error } = await supabase
         .from('saved_exercises')
         .select('*')
-        .order('saved_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -34,21 +33,16 @@ class SupabaseSavedExerciseService {
 
   // Save an exercise
   async saveExercise(exercise: {
-    exercise_id: string;
+    exerciseId: string;
     name: string;
-    gif_url?: string;
+    gifUrl?: string;
     target?: string;
     equipment?: string;
-    body_part?: string;
   }): Promise<SavedExercise | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       const { data, error } = await supabase
         .from('saved_exercises')
         .insert({
-          user_id: user.id,
           ...exercise,
         })
         .select()
@@ -77,7 +71,7 @@ class SupabaseSavedExerciseService {
       const { error } = await supabase
         .from('saved_exercises')
         .delete()
-        .eq('exercise_id', exerciseId);
+        .eq('exerciseId', exerciseId);
 
       if (error) throw error;
 
@@ -96,7 +90,7 @@ class SupabaseSavedExerciseService {
       const { data, error } = await supabase
         .from('saved_exercises')
         .select('id')
-        .eq('exercise_id', exerciseId)
+        .eq('exerciseId', exerciseId)
         .maybeSingle();
 
       if (error) throw error;
