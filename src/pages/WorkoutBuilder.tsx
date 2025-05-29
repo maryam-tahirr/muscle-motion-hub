@@ -270,6 +270,36 @@ const WorkoutBuilder = () => {
     return workoutItems[currentItemIndex];
   };
 
+  // Add the missing handleSaveWorkout function
+  const handleSaveWorkout = async () => {
+    if (!user) {
+      toast.error('You must be logged in to save workouts');
+      return;
+    }
+
+    if (!workoutName.trim()) {
+      toast.error('Please enter a workout name');
+      return;
+    }
+
+    if (workoutItems.length === 0) {
+      toast.error('Please add at least one exercise to your workout');
+      return;
+    }
+
+    try {
+      const savedWorkout = await supabaseSavedWorkoutService.saveWorkout(workoutName, workoutItems);
+      if (savedWorkout) {
+        setSaveWorkoutDialog(false);
+        setWorkoutName('');
+        toast.success('Workout saved successfully!');
+      }
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      toast.error('Failed to save workout');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
